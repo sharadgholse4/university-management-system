@@ -27,4 +27,4 @@ frontend/.vite/
 # Temporary & Log files
 *.log
 *.tmp
-university.db
+university.db*
