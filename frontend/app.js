@@ -57,8 +57,8 @@ const INITIAL_NOTICES = [
 const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
-  const [user, setUser] = useState(INITIAL_DEMO_USERS.student);
-  const [token, setToken] = useState('demo-jwt-token');
+  const [user, setUser] = useState(null); // Default to Login Page
+  const [token, setToken] = useState(null);
 
   const switchRole = (roleKey) => {
     if (INITIAL_DEMO_USERS[roleKey]) {
@@ -74,9 +74,10 @@ function AuthProvider({ children }) {
       setToken(res.data.token);
       return { success: true };
     }
-    // Fallback demo login
-    if (username.includes('prof') || username.includes('smith')) switchRole('professor');
-    else if (username.includes('admin') || username.includes('dean')) switchRole('admin');
+    // Fallback demo login based on input username
+    const lower = (username || '').toLowerCase();
+    if (lower.includes('prof') || lower.includes('smith')) switchRole('professor');
+    else if (lower.includes('admin') || lower.includes('dean')) switchRole('admin');
     else switchRole('student');
     return { success: true };
   };
@@ -119,7 +120,7 @@ function BackendStatusBadge() {
   );
 }
 
-// 2. Navbar with 1-Click Role Switcher
+// 2. Navbar
 function Navbar({ activeTab, setActiveTab }) {
   const { user, switchRole, logout } = useContext(AuthContext);
 
@@ -151,13 +152,15 @@ function Navbar({ activeTab, setActiveTab }) {
           )
         ),
 
-        // User Avatar Badge
+        // User Avatar Badge & Sign Out Button
         user && h('div', { className: 'flex items-center gap-3 pl-3 border-l border-slate-200' },
           h('div', { className: 'text-right hidden sm:block' },
             h('div', { className: 'text-xs font-bold text-slate-800' }, user.name),
             h('div', { className: 'text-[10px] font-semibold uppercase text-indigo-600 tracking-wider' }, user.role)
           ),
-          h('button', { onClick: logout, title: 'Sign Out', className: 'p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors' }, '🚪')
+          h('button', { onClick: logout, title: 'Sign Out to Login Page', className: 'px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-xs font-bold transition-colors flex items-center gap-1' },
+            '🚪 Sign Out'
+          )
         )
       )
     )
@@ -198,7 +201,7 @@ function Sidebar({ activeTab, setActiveTab }) {
 
     h('div', { className: 'p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs text-slate-500' },
       h('div', { className: 'font-bold text-slate-700 mb-1' }, '⚙️ System Info'),
-      h('div', null, 'API Port: 8080 (Crow)'),
+      h('div', null, 'API Port: 8080 (Crow C++)'),
       h('div', null, 'Web Port: 3000 (Node)')
     )
   );
@@ -227,6 +230,94 @@ function StatCard({ title, value, subtitle, icon, color = 'indigo' }) {
 
 // --- PAGES ---
 
+// 0. LOGIN PAGE COMPONENT
+function LoginPage() {
+  const { login, switchRole } = useContext(AuthContext);
+  const [username, setUsername] = useState('student_alex');
+  const [password, setPassword] = useState('password123');
+  const [loading, setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    await login(username, password);
+    setLoading(false);
+  };
+
+  return h('div', { className: 'min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 font-sans' },
+    h('div', { className: 'w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6' },
+      // Header Logo
+      h('div', { className: 'text-center space-y-2' },
+        h('div', { className: 'w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-500 mx-auto flex items-center justify-center text-3xl text-white font-bold shadow-lg shadow-indigo-500/30' }, '🎓'),
+        h('h2', { className: 'text-2xl font-bold text-slate-900' }, isRegister ? 'Create EduPortal Account' : 'Welcome to EduPortal'),
+        h('p', { className: 'text-xs text-slate-500' }, 'Sign in to access University Management Portal & C++ Backend')
+      ),
+
+      // 1-Click Quick Demo Login Buttons
+      h('div', { className: 'p-4 bg-indigo-50/80 rounded-2xl border border-indigo-100 space-y-2' },
+        h('div', { className: 'text-xs font-bold text-indigo-900 uppercase tracking-wider text-center' }, '⚡ 1-Click Quick Demo Sign In'),
+        h('div', { className: 'grid grid-cols-3 gap-2 pt-1' },
+          h('button', {
+            type: 'button',
+            onClick: () => switchRole('student'),
+            className: 'py-2 px-1 bg-white hover:bg-indigo-600 hover:text-white text-indigo-950 text-xs font-bold rounded-xl shadow-sm border border-indigo-200/60 transition-all text-center'
+          }, '👨‍🎓 Student'),
+          h('button', {
+            type: 'button',
+            onClick: () => switchRole('professor'),
+            className: 'py-2 px-1 bg-white hover:bg-indigo-600 hover:text-white text-indigo-950 text-xs font-bold rounded-xl shadow-sm border border-indigo-200/60 transition-all text-center'
+          }, '👨‍🏫 Professor'),
+          h('button', {
+            type: 'button',
+            onClick: () => switchRole('admin'),
+            className: 'py-2 px-1 bg-white hover:bg-indigo-600 hover:text-white text-indigo-950 text-xs font-bold rounded-xl shadow-sm border border-indigo-200/60 transition-all text-center'
+          }, '👑 Admin')
+        )
+      ),
+
+      // Login / Registration Form
+      h('form', { onSubmit: handleSubmit, className: 'space-y-4' },
+        h('div', { className: 'space-y-1' },
+          h('label', { className: 'text-xs font-bold text-slate-700 uppercase tracking-wider' }, 'Username / Email'),
+          h('input', {
+            type: 'text',
+            value: username,
+            onChange: (e) => setUsername(e.target.value),
+            required: true,
+            className: 'w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm font-medium'
+          })
+        ),
+
+        h('div', { className: 'space-y-1' },
+          h('label', { className: 'text-xs font-bold text-slate-700 uppercase tracking-wider' }, 'Password'),
+          h('input', {
+            type: 'password',
+            value: password,
+            onChange: (e) => setPassword(e.target.value),
+            required: true,
+            className: 'w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm font-medium'
+          })
+        ),
+
+        h('button', {
+          type: 'submit',
+          disabled: loading,
+          className: 'w-full py-3.5 bg-gradient-to-r from-indigo-600 to-sky-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 hover:opacity-95 transition-all'
+        }, loading ? 'Authenticating with C++ REST API...' : (isRegister ? 'Register Account' : 'Sign In to Portal')),
+
+        h('div', { className: 'text-center pt-2' },
+          h('button', {
+            type: 'button',
+            onClick: () => setIsRegister(!isRegister),
+            className: 'text-xs font-semibold text-indigo-600 hover:underline'
+          }, isRegister ? 'Already have an account? Sign In' : 'Need an account? Register here')
+        )
+      )
+    )
+  );
+}
+
 // 1. Dashboard Page
 function DashboardPage({ setActiveTab }) {
   const { user } = useContext(AuthContext);
@@ -249,7 +340,7 @@ function DashboardPage({ setActiveTab }) {
     h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4' },
       h(StatCard, { title: 'Current CGPA', value: '3.85 / 4.00', subtitle: 'Top 5% of Class', icon: '🎓', color: 'emerald' }),
       h(StatCard, { title: 'Attendance Rate', value: '94.2%', subtitle: '28 / 30 Classes Attended', icon: '📅', color: 'indigo' }),
-      h(StatCard, { title: 'Enrolled Courses', value: '4 Courses', subtitle: '14 Credit Hours', icon: '📚', color: 'amber' }),
+      h(StatCard, { title: 'Enrolled Courses', value: '4 Courses', subtitle: '14 Credit Hours', icon: 'amber' }),
       h(StatCard, { title: 'Pending Tasks', value: '2 Exams', subtitle: 'Midterms next week', icon: '⏳', color: 'rose' })
     ),
 
@@ -291,7 +382,7 @@ function ProfilePage() {
               h('p', { className: 'text-sm text-indigo-600 font-semibold uppercase tracking-wider' }, `${user?.role} • ${user?.department}`)
             )
           ),
-          h('span', { className: 'px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold' }, 'Status: Active Student')
+          h('span', { className: 'px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold' }, 'Status: Active Account')
         ),
 
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm' },
@@ -319,7 +410,7 @@ function ProfilePage() {
 
 // 3. Courses Page
 function CoursesPage() {
-  const [courses, setCourses] = useState(INITIAL_COURSES);
+  const [courses] = useState(INITIAL_COURSES);
 
   return h('div', { className: 'space-y-6' },
     h('div', { className: 'flex items-center justify-between' },
@@ -506,6 +597,11 @@ function AnnouncementsPage() {
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { user } = useContext(AuthContext);
+
+  // If user is not logged in, render the Login Page!
+  if (!user) {
+    return h(LoginPage);
+  }
 
   const renderContent = () => {
     switch (activeTab) {
