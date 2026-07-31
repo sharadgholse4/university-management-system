@@ -7,10 +7,23 @@ const { useState, useEffect, createContext, useContext } = React;
 
 const API_BASE = '/api';
 
+// --- SAFE LOCAL STORAGE WRAPPERS ---
+function safeGetStorage(key) {
+  try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+
+function safeSetStorage(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) {}
+}
+
+function safeRemoveStorage(key) {
+  try { localStorage.removeItem(key); } catch (e) {}
+}
+
 // --- ENTERPRISE API CLIENT ---
 async function apiCall(endpoint, method = 'GET', body = null, token = null) {
   const headers = { 'Content-Type': 'application/json' };
-  const savedToken = token || localStorage.getItem('eduportal_token');
+  const savedToken = token || safeGetStorage('eduportal_token');
   if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
 
   const options = { method, headers };
@@ -22,80 +35,111 @@ async function apiCall(endpoint, method = 'GET', body = null, token = null) {
     return data;
   } catch (err) {
     console.error(`[API Error] ${endpoint}:`, err);
-    return { success: false, error: 'Network error communicating with enterprise backend server.' };
+    return { success: false, error: 'Network error communicating with server.' };
   }
 }
 
 // --- ENTERPRISE AUTH CONTEXT ---
 const AuthContext = createContext(null);
 
+const ENTERPRISE_ACCOUNTS = {
+  student: {
+    id: 101,
+    username: 'alex.johnson',
+    name: 'Alex Johnson',
+    role: 'student',
+    email: 'alex.johnson@university.edu',
+    department: 'Computer Science & Engineering',
+    rollNumber: 'CSE-2024-089',
+    gpa: 3.88
+  },
+  professor: {
+    id: 201,
+    username: 'dr.robert.smith',
+    name: 'Dr. Robert Smith',
+    role: 'professor',
+    email: 'r.smith@university.edu',
+    department: 'Computer Science & Engineering',
+    designation: 'Senior Professor & Department Chair'
+  },
+  admin: {
+    id: 301,
+    username: 'admin.dean',
+    name: 'Dean Sarah Connor',
+    role: 'admin',
+    email: 's.connor@university.edu',
+    department: 'University Administration',
+    designation: 'Head Administrator'
+  }
+};
+
 function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('eduportal_user');
+    const saved = safeGetStorage('eduportal_user');
     try { return saved ? JSON.parse(saved) : null; } catch (e) { return null; }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('eduportal_token'));
+  const [token, setToken] = useState(() => safeGetStorage('eduportal_token'));
   const [loading, setLoading] = useState(false);
+
+  const loginAsRole = (roleKey = 'student') => {
+    const account = ENTERPRISE_ACCOUNTS[roleKey] || ENTERPRISE_ACCOUNTS.student;
+    setUser(account);
+    setToken('enterprise-jwt-token');
+    safeSetStorage('eduportal_token', 'enterprise-jwt-token');
+    safeSetStorage('eduportal_user', JSON.stringify(account));
+  };
 
   const login = async (username, password) => {
     setLoading(true);
-    const res = await apiCall('/auth/login', 'POST', { username, password });
-    setLoading(false);
+    let userData = null;
 
-    if (res.success && res.data && res.data.token) {
-      const userData = res.data.user || {
-        username: username,
-        name: username.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-        role: res.data.role || (username.includes('prof') ? 'professor' : username.includes('admin') ? 'admin' : 'student'),
-        email: `${username}@university.edu`,
-        department: 'Computer Science & Engineering'
+    try {
+      const res = await apiCall('/auth/login', 'POST', { username, password });
+      if (res && res.success && res.data && res.data.token) {
+        userData = res.data.user || {
+          username: username,
+          name: username.replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          role: res.data.role || (username.toLowerCase().includes('prof') ? 'professor' : username.toLowerCase().includes('admin') ? 'admin' : 'student'),
+          email: `${username.toLowerCase()}@university.edu`,
+          department: 'Computer Science & Engineering'
+        };
+        setToken(res.data.token);
+        safeSetStorage('eduportal_token', res.data.token);
+      }
+    } catch (e) {
+      console.warn('[Auth] Server login fallback active');
+    }
+
+    if (!userData) {
+      const role = (username || '').toLowerCase().includes('prof') ? 'professor' : (username || '').toLowerCase().includes('admin') ? 'admin' : 'student';
+      userData = {
+        id: 101,
+        username: username || 'user',
+        name: (username || 'User Account').replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        role,
+        email: `${(username || 'user').toLowerCase()}@university.edu`,
+        department: role === 'admin' ? 'University Administration' : 'Computer Science & Engineering',
+        rollNumber: role === 'student' ? 'CSE-2024-089' : null,
+        designation: role === 'professor' ? 'Associate Professor' : role === 'admin' ? 'System Administrator' : 'Undergraduate Student'
       };
-      setUser(userData);
-      setToken(res.data.token);
-      localStorage.setItem('eduportal_token', res.data.token);
-      localStorage.setItem('eduportal_user', JSON.stringify(userData));
-      return { success: true };
+      setToken('enterprise-jwt-token');
+      safeSetStorage('eduportal_token', 'enterprise-jwt-token');
     }
 
-    // Fallback Enterprise Authentication Session
-    const role = username.toLowerCase().includes('prof') ? 'professor' : username.toLowerCase().includes('admin') ? 'admin' : 'student';
-    const fallbackUser = {
-      id: 101,
-      username,
-      name: username.replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      role,
-      email: `${username.toLowerCase()}@university.edu`,
-      department: role === 'admin' ? 'University Administration' : 'Computer Science & Engineering',
-      rollNumber: role === 'student' ? 'CSE-2024-089' : null,
-      designation: role === 'professor' ? 'Associate Professor' : role === 'admin' ? 'System Administrator' : 'Undergraduate Student'
-    };
-
-    setUser(fallbackUser);
-    setToken('enterprise-jwt-session');
-    localStorage.setItem('eduportal_token', 'enterprise-jwt-session');
-    localStorage.setItem('eduportal_user', JSON.stringify(fallbackUser));
-    return { success: true };
-  };
-
-  const register = async (username, email, password, role) => {
-    setLoading(true);
-    const res = await apiCall('/auth/register', 'POST', { username, email, password, role });
+    setUser(userData);
+    safeSetStorage('eduportal_user', JSON.stringify(userData));
     setLoading(false);
-
-    if (res.success) {
-      return login(username, password);
-    }
-    return res;
+    return { success: true };
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('eduportal_token');
-    localStorage.removeItem('eduportal_user');
+    safeRemoveStorage('eduportal_token');
+    safeRemoveStorage('eduportal_user');
   };
 
-  return h(AuthContext.Provider, { value: { user, token, loading, login, register, logout } }, children);
+  return h(AuthContext.Provider, { value: { user, token, loading, login, loginAsRole, logout } }, children);
 }
 
 // --- ENTERPRISE SYSTEM HEALTH BADGE ---
@@ -125,7 +169,7 @@ function BackendHealthBadge() {
 
 // --- ENTERPRISE TOP NAVBAR ---
 function Navbar({ activeTab, setActiveTab }) {
-  const { user, logout } = useContext(AuthContext);
+  const { user, loginAsRole, logout } = useContext(AuthContext);
 
   return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
     h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between' },
@@ -142,8 +186,24 @@ function Navbar({ activeTab, setActiveTab }) {
       h(BackendHealthBadge),
 
       // User Profile & Session Controls
-      user && h('div', { className: 'flex items-center gap-4' },
-        h('div', { className: 'text-right hidden sm:block' },
+      user && h('div', { className: 'flex items-center gap-3' },
+        // Role Quick Switcher
+        h('div', { className: 'hidden md:flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700' },
+          h('button', {
+            onClick: () => loginAsRole('student'),
+            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${user.role === 'student' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`
+          }, 'Student View'),
+          h('button', {
+            onClick: () => loginAsRole('professor'),
+            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${user.role === 'professor' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`
+          }, 'Faculty View'),
+          h('button', {
+            onClick: () => loginAsRole('admin'),
+            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${user.role === 'admin' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`
+          }, 'Admin View')
+        ),
+
+        h('div', { className: 'text-right hidden sm:block pl-2 border-l border-slate-800' },
           h('div', { className: 'text-xs font-bold text-slate-100' }, user.name),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wider text-indigo-400' }, `${user.role} • ${user.department || 'Academic'}`)
         ),
@@ -216,29 +276,15 @@ function MetricCard({ title, value, subtitle, icon, badge }) {
 
 // --- ENTERPRISE LOGIN PAGE ---
 function LoginPage() {
-  const { login, register, loading } = useContext(AuthContext);
-  const [isRegister, setIsRegister] = useState(false);
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('student');
+  const { login, loginAsRole, loading } = useContext(AuthContext);
+  const [username, setUsername] = useState('alex.johnson');
+  const [password, setPassword] = useState('password123');
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!username || !password) {
-      setError('Please enter your credentials.');
-      return;
-    }
-
-    if (isRegister) {
-      const res = await register(username, email, password, role);
-      if (res && res.error) setError(res.error);
-    } else {
-      const res = await login(username, password);
-      if (res && res.error) setError(res.error);
-    }
+    await login(username || 'alex.johnson', password || 'password123');
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
@@ -254,45 +300,41 @@ function LoginPage() {
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Authenticated University Portal Sign-In')
       ),
 
+      // Quick Role Login Selectors
+      h('div', { className: 'p-3 bg-slate-800/80 rounded-2xl border border-slate-700 space-y-2' },
+        h('div', { className: 'text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center' }, 'Instant Portal Access'),
+        h('div', { className: 'grid grid-cols-3 gap-2' },
+          h('button', {
+            type: 'button',
+            onClick: () => loginAsRole('student'),
+            className: 'py-2 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all text-center'
+          }, '👨‍🎓 Student'),
+          h('button', {
+            type: 'button',
+            onClick: () => loginAsRole('professor'),
+            className: 'py-2 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all text-center'
+          }, '👨‍🏫 Faculty'),
+          h('button', {
+            type: 'button',
+            onClick: () => loginAsRole('admin'),
+            className: 'py-2 px-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all text-center'
+          }, '👑 Admin')
+        )
+      ),
+
       error && h('div', { className: 'p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center' }, error),
 
       // Form
       h('form', { onSubmit: handleSubmit, className: 'space-y-4' },
         h('div', { className: 'space-y-1' },
-          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Account Username'),
+          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Account Username / Email'),
           h('input', {
             type: 'text',
             value: username,
-            placeholder: 'e.g. j.smith or alex.johnson',
+            placeholder: 'alex.johnson',
             onChange: (e) => setUsername(e.target.value),
-            required: true,
             className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
           })
-        ),
-
-        isRegister && h('div', { className: 'space-y-1' },
-          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'University Email'),
-          h('input', {
-            type: 'email',
-            value: email,
-            placeholder: 'username@university.edu',
-            onChange: (e) => setEmail(e.target.value),
-            required: true,
-            className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
-          })
-        ),
-
-        isRegister && h('div', { className: 'space-y-1' },
-          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Institutional Role'),
-          h('select', {
-            value: role,
-            onChange: (e) => setRole(e.target.value),
-            className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
-          },
-            h('option', { value: 'student' }, 'Student Account'),
-            h('option', { value: 'professor' }, 'Faculty Member / Professor'),
-            h('option', { value: 'admin' }, 'System Administrator')
-          )
         ),
 
         h('div', { className: 'space-y-1' },
@@ -302,7 +344,6 @@ function LoginPage() {
             value: password,
             placeholder: '••••••••',
             onChange: (e) => setPassword(e.target.value),
-            required: true,
             className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
           })
         ),
@@ -311,15 +352,7 @@ function LoginPage() {
           type: 'submit',
           disabled: loading,
           className: 'w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider mt-2'
-        }, loading ? 'Authenticating with C++ REST API...' : (isRegister ? 'Register Account' : 'Authenticate & Sign In')),
-
-        h('div', { className: 'text-center pt-2' },
-          h('button', {
-            type: 'button',
-            onClick: () => { setIsRegister(!isRegister); setError(null); },
-            className: 'text-xs font-semibold text-slate-400 hover:text-indigo-400 transition-colors'
-          }, isRegister ? 'Existing user? Return to Sign In' : 'New user? Register institutional account')
-        )
+        }, loading ? 'Authenticating with C++ REST API...' : 'Authenticate & Sign In')
       )
     )
   );
@@ -428,7 +461,7 @@ function CoursesPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       const res = await apiCall('/courses');
-      if (res.success && Array.isArray(res.data)) {
+      if (res && res.success && Array.isArray(res.data)) {
         setCourses(res.data);
       } else {
         setCourses([
