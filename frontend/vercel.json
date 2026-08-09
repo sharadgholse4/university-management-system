@@ -1,9 +1,0 @@
-{
-  "outputDirectory": "dist",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/app.js", "destination": "/app.js" },
-    { "source": "/:path*", "destination": "/index.html" }
-  ]
-}
