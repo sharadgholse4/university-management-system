@@ -9,6 +9,10 @@ const { useState, useEffect, createContext, useContext } = React;
 
 const API_BASE = '/api';
 
+// --- GOOGLE OAUTH 2.0 CLIENT ID CONFIGURATION ---
+// Paste your Client ID from Google Cloud Console below (e.g. '123456789-xyz.apps.googleusercontent.com')
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
 // Storage helpers
 function safeGetStorage(key) {
   try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -426,10 +430,10 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
-    if (window.google?.accounts?.id) {
+    if (window.google?.accounts?.id && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
       try {
         window.google.accounts.id.initialize({
-          client_id: '10823485723-demo-university.apps.googleusercontent.com',
+          client_id: GOOGLE_CLIENT_ID,
           callback: (response) => {
             if (response.credential) {
               loginWithGoogle(response.credential);
@@ -437,10 +441,13 @@ function AuthPage() {
           }
         });
         window.google.accounts.id.prompt();
-      } catch (e) {}
+        return;
+      } catch (e) {
+        console.warn('[Google SSO] Prompt fallback active');
+      }
     }
     
-    // Instant Google Student SSO Sign-In
+    // Instant Google Student SSO Sign-In fallback
     loginWithGoogle({
       name: 'Sharad Gholse (Google SSO)',
       email: 'sharad.gholse@university.edu',
