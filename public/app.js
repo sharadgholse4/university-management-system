@@ -14,7 +14,6 @@ const useContext = (...args) => React.useContext(...args);
 const API_BASE = '/api';
 
 // --- GOOGLE OAUTH 2.0 CLIENT ID CONFIGURATION ---
-// Paste your Client ID from Google Cloud Console below (e.g. '123456789-xyz.apps.googleusercontent.com')
 const GOOGLE_CLIENT_ID = '445838676324-impfkq5c9utvu6ff3inh6iv8s67vvuph.apps.googleusercontent.com';
 
 const VIDEO_BG_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_055001_8e16d972-3b2b-441c-86ad-2901a54682f9.mp4';
@@ -44,7 +43,7 @@ function BackgroundVideo() {
       className: 'w-full h-full object-cover opacity-40 scale-105',
       src: VIDEO_BG_URL
     }),
-    h('div', { className: 'absolute inset-0 bg-slate-950/50 backdrop-blur-[1px]' })
+    h('div', { className: 'absolute inset-0 bg-slate-950/60 backdrop-blur-[1px]' })
   );
 }
 
@@ -117,13 +116,6 @@ function AuthProvider({ children }) {
   });
   const [token, setToken] = useState(() => safeGetStorage('eduportal_token'));
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState(() => safeGetStorage('eduportal_theme') || 'dark');
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    safeSetStorage('eduportal_theme', nextTheme);
-  };
 
   const getRegisteredUsers = () => {
     try {
@@ -278,7 +270,7 @@ function AuthProvider({ children }) {
     safeRemoveStorage('eduportal_user');
   };
 
-  return h(AuthContext.Provider, { value: { user, token, loading, login, register, loginWithGoogle, logout, theme, toggleTheme } }, children);
+  return h(AuthContext.Provider, { value: { user, token, loading, login, register, loginWithGoogle, logout } }, children);
 }
 
 // Dynamic Time-of-Day Greeting Helper
@@ -323,43 +315,34 @@ function DynamicGreetingBadge() {
 
 // Top Navbar
 function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
-  const { user, logout, theme, toggleTheme } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
 
-  const isLight = theme === 'light';
-
-  return h('header', { className: `${isLight ? 'bg-white/95 border-slate-200 text-slate-900' : 'bg-slate-900/90 border-slate-800 text-white'} backdrop-blur-md border-b sticky top-0 z-50 shadow-md transition-colors` },
+  return h('header', { className: 'bg-slate-900/90 border-b border-slate-800 text-white backdrop-blur-md sticky top-0 z-50 shadow-md' },
     h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2' },
       h('div', { className: 'flex items-center gap-3' },
         h('button', {
           onClick: () => setMobileOpen(!mobileOpen),
-          className: `lg:hidden p-2 rounded-xl border text-sm font-bold ${isLight ? 'bg-slate-100 border-slate-300 text-slate-700' : 'bg-slate-800 border-slate-700 text-slate-300'}`
+          className: 'lg:hidden p-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-sm font-bold'
         }, mobileOpen ? '✕' : '☰'),
         h('div', { className: 'flex items-center gap-2.5 cursor-pointer', onClick: () => setActiveTab('dashboard') },
           h('div', { className: 'w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/20' }, '🏛️'),
           h('div', null,
-            h('h1', { className: `text-base sm:text-lg font-extrabold tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}` }, 'EDUPORTAL'),
-            h('p', { className: `text-[9px] sm:text-[10px] font-bold tracking-widest uppercase hidden xs:block ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, 'Academic System')
+            h('h1', { className: 'text-base sm:text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
+            h('p', { className: 'text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest uppercase hidden xs:block' }, 'Academic System')
           )
         )
       ),
 
       h(DynamicGreetingBadge),
 
-      user && h('div', { className: 'flex items-center gap-2 sm:gap-3' },
+      user && h('div', { className: 'flex items-center gap-3' },
         h('div', { className: 'text-right hidden sm:block' },
-          h('div', { className: `text-xs font-bold ${isLight ? 'text-slate-800' : 'text-slate-100'}` }, user.name),
-          h('div', { className: 'text-[10px] font-bold uppercase tracking-wider text-indigo-500' }, `${user.role} • ${user.department || 'Academic'}`)
-        ),
-        h('button', {
-          onClick: toggleTheme,
-          className: `px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-indigo-700' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-300'}`
-        },
-          h('span', null, isLight ? '🌙' : '☀️'),
-          h('span', { className: 'hidden sm:inline' }, isLight ? 'Dark Mode' : 'Light Mode')
+          h('div', { className: 'text-xs font-bold text-slate-100' }, user.name),
+          h('div', { className: 'text-[10px] font-bold uppercase tracking-wider text-indigo-400' }, `${user.role} • ${user.department || 'Academic'}`)
         ),
         h('button', {
           onClick: logout,
-          className: `px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${isLight ? 'bg-slate-100 hover:bg-rose-100 hover:text-rose-700 border-slate-300 text-slate-700' : 'bg-slate-800 hover:bg-rose-950 hover:text-rose-300 border-slate-700 text-slate-300'}`
+          className: 'px-3 py-1.5 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5'
         },
           h('span', null, '🔒'),
           h('span', { className: 'hidden sm:inline' }, 'Sign Out')
@@ -371,8 +354,7 @@ function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
 
 // Sidebar Navigation
 function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
-  const { user, theme } = useContext(AuthContext);
-  const isLight = theme === 'light';
+  const { user } = useContext(AuthContext);
 
   const items = [
     { id: 'dashboard', label: 'Overview Dashboard', icon: '📊', roles: ['student', 'professor', 'admin'] },
@@ -394,15 +376,15 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
 
   const navContent = h('div', { className: 'flex flex-col justify-between h-full space-y-4' },
     h('nav', { className: 'space-y-1' },
-      h('div', { className: `text-[11px] font-bold tracking-wider uppercase px-3 mb-3 flex items-center justify-between ${isLight ? 'text-slate-500' : 'text-slate-500'}` },
+      h('div', { className: 'text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-3 flex items-center justify-between' },
         h('span', null, 'Navigation Portal'),
-        setMobileOpen && h('button', { onClick: () => setMobileOpen(false), className: `lg:hidden font-bold text-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, '✕')
+        setMobileOpen && h('button', { onClick: () => setMobileOpen(false), className: 'lg:hidden text-slate-400 hover:text-white font-bold text-sm' }, '✕')
       ),
       visibleItems.map(item =>
         h('button', {
           key: item.id,
           onClick: () => handleSelect(item.id),
-          className: `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : isLight ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`
+          className: `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`
         },
           h('span', { className: 'text-base' }, item.icon),
           item.label
@@ -410,8 +392,8 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       )
     ),
 
-    h('div', { className: `p-3 rounded-xl border text-[11px] space-y-1 text-center font-medium ${isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-slate-950/90 border-slate-800 text-slate-400'}` },
-      h('div', { className: `font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'}` }, '© 2026 EduPortal'),
+    h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1 text-center font-medium' },
+      h('div', { className: 'font-bold text-slate-300' }, '© 2026 EduPortal'),
       h('div', { className: 'flex items-center justify-center gap-1 text-slate-400' },
         'Made with ',
         h('span', { className: 'text-rose-500 text-xs' }, '❤️')
@@ -421,37 +403,34 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
 
   return h(React.Fragment, null,
     // Desktop Sidebar (lg screens)
-    h('aside', { className: `hidden lg:flex w-64 ${isLight ? 'bg-white/95 border-slate-200 text-slate-800' : 'bg-slate-900/90 border-slate-800 text-slate-300'} backdrop-blur-md border-r p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)] transition-colors` }, navContent),
+    h('aside', { className: 'hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]' }, navContent),
 
     // Mobile / Tablet Drawer (sm & md screens)
     mobileOpen && h('div', { className: 'lg:hidden fixed inset-0 z-50 flex' },
       h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm', onClick: () => setMobileOpen(false) }),
-      h('aside', { className: `relative w-64 ${isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-300'} border-r p-4 flex flex-col justify-between shrink-0 h-full shadow-2xl z-10` }, navContent)
+      h('aside', { className: 'relative w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex flex-col justify-between shrink-0 h-full shadow-2xl z-10' }, navContent)
     )
   );
 }
 
 // Metric Card Component
 function MetricCard({ title, value, subtitle, icon, badge }) {
-  const { theme } = useContext(AuthContext);
-  const isLight = theme === 'light';
-
-  return h('div', { className: `${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-900/90 border-slate-800 shadow-lg'} backdrop-blur-md p-5 rounded-2xl border space-y-2 transition-colors` },
+  return h('div', { className: 'bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-2' },
     h('div', { className: 'flex items-center justify-between' },
-      h('span', { className: `text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, title),
+      h('span', { className: 'text-xs font-bold text-slate-400 uppercase tracking-wider' }, title),
       h('span', { className: 'text-xl' }, icon)
     ),
     h('div', { className: 'flex items-baseline justify-between' },
-      h('h3', { className: `text-2xl font-black ${isLight ? 'text-slate-900' : 'text-white'}` }, value),
+      h('h3', { className: 'text-2xl font-black text-white' }, value),
       badge && h('span', { className: 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' }, badge)
     ),
-    subtitle && h('p', { className: `text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, subtitle)
+    subtitle && h('p', { className: 'text-xs text-slate-400 font-medium' }, subtitle)
   );
 }
 
 // Auth Component (Sign In & Sign Up)
 function AuthPage() {
-  const { login, register, loginWithGoogle, loading, theme, toggleTheme } = useContext(AuthContext);
+  const { login, register, loginWithGoogle, loading } = useContext(AuthContext);
   const [mode, setMode] = useState('login');
   
   const [loginUsername, setLoginUsername] = useState('');
@@ -470,8 +449,6 @@ function AuthPage() {
 
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
-
-  const isLight = theme === 'light';
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -573,50 +550,40 @@ function AuthPage() {
     });
   };
 
-  return h('div', { className: `min-h-screen ${isLight ? 'bg-slate-100' : 'bg-slate-950'} flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors` },
+  return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
     h(BackgroundVideo),
     h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/30 rounded-full blur-3xl pointer-events-none' }),
     h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-500/30 rounded-full blur-3xl pointer-events-none' }),
 
-    // High-Vibrancy Auth Card
-    h('div', { className: `w-full max-w-lg ${isLight ? 'bg-white/95 border-indigo-200 text-slate-800 shadow-2xl shadow-indigo-500/10' : 'bg-slate-900/95 border-indigo-500/40 text-white shadow-2xl shadow-indigo-500/30'} backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border-2 space-y-6 relative z-10 transition-colors` },
-      
-      // Theme Switcher Button on Auth Card
-      h('button', {
-        type: 'button',
-        onClick: toggleTheme,
-        className: `absolute top-4 right-4 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-indigo-700' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-300'}`
-      },
-        isLight ? '🌙 Dark' : '☀️ Light'
-      ),
-
+    // Auth Card
+    h('div', { className: 'w-full max-w-lg bg-slate-900/90 border border-slate-800 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl space-y-6 relative z-10 shadow-2xl' },
       h('div', { className: 'text-center space-y-2' },
-        h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/30 ring-4 ring-indigo-500/20' }, '🏛️'),
-        h('h2', { className: `text-xl sm:text-2xl font-black tracking-tight ${isLight ? 'text-indigo-950' : 'text-white'}` }, 'EDUPORTAL ACADEMIC SYSTEM'),
-        h('p', { className: `text-xs font-bold ${isLight ? 'text-indigo-600' : 'text-indigo-300'}` }, 'Official Student & Faculty Portal Access')
+        h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/30' }, '🏛️'),
+        h('h2', { className: 'text-xl sm:text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
+        h('p', { className: 'text-xs text-indigo-400 font-bold' }, 'Official Student & Faculty Portal Access')
       ),
 
-      // Brighter Mode Select Tabs
-      h('div', { className: `flex p-1.5 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950/90 border-slate-800'} rounded-2xl border text-xs font-bold` },
+      // Mode Select Tabs
+      h('div', { className: 'flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold' },
         h('button', {
           onClick: () => { setMode('login'); setError(null); },
-          className: `flex-1 py-2.5 rounded-xl transition-all font-extrabold ${mode === 'login' ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-lg shadow-indigo-500/30' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`
+          className: `flex-1 py-2 rounded-xl transition-all ${mode === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`
         }, '🔑 Sign In'),
         h('button', {
           onClick: () => { setMode('register'); setError(null); },
-          className: `flex-1 py-2.5 rounded-xl transition-all font-extrabold ${mode === 'register' ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-lg shadow-indigo-500/30' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 hover:text-white'}`
+          className: `flex-1 py-2 rounded-xl transition-all ${mode === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`
         }, '📝 Create Account (Sign Up)')
       ),
 
-      error && h('div', { className: 'p-3.5 bg-rose-500/15 border-2 border-rose-500/40 rounded-xl text-rose-400 text-xs font-extrabold text-center shadow-md' }, error),
-      successMsg && h('div', { className: 'p-3.5 bg-emerald-500/15 border-2 border-emerald-500/40 rounded-xl text-emerald-400 text-xs font-extrabold text-center shadow-md' }, successMsg),
+      error && h('div', { className: 'p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs font-bold text-center' }, error),
+      successMsg && h('div', { className: 'p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold text-center' }, successMsg),
 
-      mode === 'login' && h('div', { className: 'space-y-5' },
-        // High Contrast Google Button
+      mode === 'login' && h('div', { className: 'space-y-4' },
+        // Google Button
         h('button', {
           type: 'button',
           onClick: handleGoogleSignIn,
-          className: 'w-full py-3 bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-900 font-extrabold text-xs rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg'
+          className: 'w-full py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl flex items-center justify-center gap-3 transition-colors shadow-md'
         },
           h('svg', { className: 'w-4 h-4', viewBox: '0 0 24 24' },
             h('path', { fill: '#4285F4', d: 'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z' }),
@@ -628,42 +595,42 @@ function AuthPage() {
         ),
 
         h('div', { className: 'flex items-center gap-3 my-2' },
-          h('div', { className: `flex-1 h-px ${isLight ? 'bg-slate-300' : 'bg-slate-800'}` }),
-          h('span', { className: `text-[10px] font-extrabold uppercase tracking-widest ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, 'Or Sign In with Credentials'),
-          h('div', { className: `flex-1 h-px ${isLight ? 'bg-slate-300' : 'bg-slate-800'}` })
+          h('div', { className: 'flex-1 h-px bg-slate-800' }),
+          h('span', { className: 'text-[10px] text-slate-500 font-bold uppercase tracking-wider' }, 'Or Sign In with Credentials'),
+          h('div', { className: 'flex-1 h-px bg-slate-800' })
         ),
 
-        h('form', { onSubmit: handleLoginSubmit, className: 'space-y-4' },
+        h('form', { onSubmit: handleLoginSubmit, className: 'space-y-3 text-xs' },
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Username or Institutional Email'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Username or Institutional Email'),
             h('input', {
               type: 'text',
               value: loginUsername,
               placeholder: 'alex.johnson or alex@university.edu',
               onChange: (e) => setLoginUsername(e.target.value),
-              className: `w-full px-4 py-3 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-white rounded-xl focus:outline-none focus:border-indigo-500'
             })
           ),
 
           h('div', { className: 'space-y-1' },
             h('div', { className: 'flex justify-between items-center' },
-              h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Password'),
+              h('label', { className: 'font-bold text-slate-300' }, 'Password'),
               h('button', {
                 type: 'button',
                 onClick: () => setShowPassword(!showPassword),
-                className: 'text-[11px] font-extrabold text-indigo-500 hover:text-indigo-400'
-              }, showPassword ? '🙈 Hide' : '👁️ Show')
+                className: 'text-[11px] text-indigo-400 font-bold hover:underline'
+              }, showPassword ? 'Hide' : 'Show')
             ),
             h('input', {
               type: showPassword ? 'text' : 'password',
               value: loginPassword,
               placeholder: '••••••••',
               onChange: (e) => setLoginPassword(e.target.value),
-              className: `w-full px-4 py-3 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-white rounded-xl focus:outline-none focus:border-indigo-500'
             })
           ),
 
-          h('div', { className: 'flex items-center justify-between text-xs font-semibold' },
+          h('div', { className: 'flex items-center justify-between text-xs' },
             h('label', { className: 'flex items-center gap-2 cursor-pointer' },
               h('input', {
                 type: 'checkbox',
@@ -671,105 +638,105 @@ function AuthPage() {
                 onChange: (e) => setRememberMe(e.target.checked),
                 className: 'rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0'
               }),
-              h('span', { className: isLight ? 'text-slate-700' : 'text-slate-300' }, 'Keep me signed in')
+              h('span', { className: 'text-slate-400 font-medium' }, 'Keep me signed in')
             ),
-            h('span', { className: 'text-xs text-indigo-500 font-bold cursor-pointer hover:underline' }, 'Need help?')
+            h('span', { className: 'text-indigo-400 font-bold cursor-pointer hover:underline' }, 'Need help?')
           ),
 
           h('button', {
             type: 'submit',
             disabled: loading,
-            className: 'w-full py-3.5 bg-gradient-to-r from-indigo-500 via-indigo-600 to-sky-500 hover:from-indigo-400 hover:to-sky-400 text-white font-black text-xs rounded-xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-wider'
+            className: 'w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider'
           }, loading ? 'Authenticating Credentials...' : 'Sign In to Portal')
         ),
 
-        h('div', { className: `pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800/90'} space-y-2` },
-          h('div', { className: `text-[10px] font-extrabold uppercase tracking-wider text-center ${isLight ? 'text-slate-500' : 'text-indigo-300'}` }, 'Quick Demo Profile Test Sign-In'),
+        h('div', { className: 'pt-4 border-t border-slate-800/80 space-y-2' },
+          h('div', { className: 'text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center' }, 'Quick Demo Profile Test Sign-In'),
           h('div', { className: 'grid grid-cols-3 gap-2' },
             h('button', {
               type: 'button',
               onClick: () => fillQuickPreset('student'),
-              className: `py-2.5 border font-extrabold text-[11px] rounded-xl transition-all ${isLight ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800' : 'bg-indigo-950/90 hover:bg-indigo-900 border-indigo-500/50 text-indigo-200'}`
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] rounded-xl border border-slate-700 transition-colors'
             }, '🎓 Student'),
             h('button', {
               type: 'button',
               onClick: () => fillQuickPreset('professor'),
-              className: `py-2.5 border font-extrabold text-[11px] rounded-xl transition-all ${isLight ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800' : 'bg-indigo-950/90 hover:bg-indigo-900 border-indigo-500/50 text-indigo-200'}`
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] rounded-xl border border-slate-700 transition-colors'
             }, '👨‍🏫 Professor'),
             h('button', {
               type: 'button',
               onClick: () => fillQuickPreset('admin'),
-              className: `py-2.5 border font-extrabold text-[11px] rounded-xl transition-all ${isLight ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800' : 'bg-indigo-950/90 hover:bg-indigo-900 border-indigo-500/50 text-indigo-200'}`
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] rounded-xl border border-slate-700 transition-colors'
             }, '🏛️ Admin')
           )
         )
       ),
 
-      mode === 'register' && h('form', { onSubmit: handleRegisterSubmit, className: 'space-y-4' },
+      mode === 'register' && h('form', { onSubmit: handleRegisterSubmit, className: 'space-y-3 text-xs' },
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Full Name *'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Full Name *'),
             h('input', {
               type: 'text',
               value: regName,
               placeholder: 'Sharad Gholse',
               onChange: (e) => setRegName(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
           ),
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Username *'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Username *'),
             h('input', {
               type: 'text',
               value: regUsername,
               placeholder: 'sharad.g',
               onChange: (e) => setRegUsername(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
           )
         ),
 
         h('div', { className: 'space-y-1' },
-          h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Institutional Email *'),
+          h('label', { className: 'font-bold text-slate-300' }, 'Institutional Email *'),
           h('input', {
             type: 'email',
             value: regEmail,
             placeholder: 'sharad.gholse@university.edu',
             onChange: (e) => setRegEmail(e.target.value),
-            className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+            className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
           })
         ),
 
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Account Role'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Account Role'),
             h('select', {
               value: regRole,
               onChange: (e) => setRegRole(e.target.value),
-              className: `w-full px-3 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             },
               h('option', { value: 'student' }, 'Student'),
               h('option', { value: 'professor' }, 'Faculty / Professor')
             )
           ),
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, regRole === 'student' ? 'Roll Number' : 'Employee ID'),
+            h('label', { className: 'font-bold text-slate-300' }, regRole === 'student' ? 'Roll Number' : 'Employee ID'),
             h('input', {
               type: 'text',
               value: regIdNumber,
               placeholder: regRole === 'student' ? 'CSE-2026-105' : 'EMP-9021',
               onChange: (e) => setRegIdNumber(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
           )
         ),
 
         h('div', { className: 'space-y-1' },
-          h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Department'),
+          h('label', { className: 'font-bold text-slate-300' }, 'Department'),
           h('select', {
             value: regDepartment,
             onChange: (e) => setRegDepartment(e.target.value),
-            className: `w-full px-3 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white focus:border-indigo-400'}`
+            className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
           },
             h('option', { value: 'Computer Science & Engineering' }, 'Computer Science & Engineering'),
             h('option', { value: 'Electrical & Electronics Engineering' }, 'Electrical & Electronics Engineering'),
@@ -781,23 +748,23 @@ function AuthPage() {
 
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Password *'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Password *'),
             h('input', {
               type: 'password',
               value: regPassword,
               placeholder: '••••••••',
               onChange: (e) => setRegPassword(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
           ),
           h('div', { className: 'space-y-1' },
-            h('label', { className: `text-[11px] font-extrabold uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-indigo-300'}` }, 'Confirm Password *'),
+            h('label', { className: 'font-bold text-slate-300' }, 'Confirm Password *'),
             h('input', {
               type: 'password',
               value: regConfirmPassword,
               placeholder: '••••••••',
               onChange: (e) => setRegConfirmPassword(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-400' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
           )
         ),
@@ -805,7 +772,7 @@ function AuthPage() {
         h('button', {
           type: 'submit',
           disabled: loading,
-          className: 'w-full py-3.5 bg-gradient-to-r from-indigo-500 via-indigo-600 to-sky-500 hover:from-indigo-400 hover:to-sky-400 text-white font-black text-xs rounded-xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-wider mt-2'
+          className: 'w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider mt-2'
         }, loading ? 'Registering Account...' : 'Complete Registration & Sign In')
       )
     )
@@ -814,19 +781,18 @@ function AuthPage() {
 
 // Overview Dashboard
 function DashboardPage({ setActiveTab }) {
-  const { user, theme } = useContext(AuthContext);
-  const isLight = theme === 'light';
+  const { user } = useContext(AuthContext);
 
   return h('div', { className: 'space-y-6' },
-    h('div', { className: `${isLight ? 'bg-white border-slate-200 text-slate-800 shadow-lg' : 'bg-slate-900/90 border-slate-800 text-white shadow-xl'} backdrop-blur-md p-6 rounded-3xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-colors` },
+    h('div', { className: 'bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6' },
       h('div', { className: 'space-y-2' },
-        h('span', { className: 'px-3 py-1 bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 rounded-full text-[11px] font-bold uppercase tracking-wider' }, `Role: ${user?.role}`),
-        h('h2', { className: `text-2xl sm:text-3xl font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}` }, `Academic Portal — ${user?.name}`),
-        h('p', { className: `text-xs max-w-xl font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Access institutional records, course schedules, attendance logs, and academic transcripts in real-time.')
+        h('span', { className: 'px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[11px] font-bold uppercase tracking-wider' }, `Role: ${user?.role}`),
+        h('h2', { className: 'text-2xl sm:text-3xl font-black tracking-tight' }, `Academic Portal — ${user?.name}`),
+        h('p', { className: 'text-slate-400 text-xs max-w-xl font-medium' }, 'Access institutional records, course schedules, attendance logs, and academic transcripts in real-time.')
       ),
       h('div', { className: 'flex flex-wrap gap-3 w-full md:w-auto' },
         h('button', { onClick: () => setActiveTab('courses'), className: 'flex-1 md:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors' }, 'Course Catalog'),
-        h('button', { onClick: () => setActiveTab('results'), className: `flex-1 md:flex-initial px-4 py-2.5 font-bold rounded-xl text-xs border transition-colors ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'}` }, 'View Transcripts')
+        h('button', { onClick: () => setActiveTab('results'), className: 'flex-1 md:flex-initial px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs border border-slate-700 transition-colors' }, 'View Transcripts')
       )
     ),
 
@@ -837,27 +803,27 @@ function DashboardPage({ setActiveTab }) {
       h(MetricCard, { title: 'Current Semester', value: 'Fall 2026', subtitle: 'Academic Term 4', icon: '🏛️' })
     ),
 
-    h('div', { className: `${isLight ? 'bg-white border-slate-200 text-slate-800 shadow-md' : 'bg-slate-900/90 border-slate-800 text-white shadow-sm'} backdrop-blur-md p-6 rounded-2xl border space-y-4 transition-colors` },
+    h('div', { className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4' },
       h('div', { className: 'flex items-center justify-between' },
-        h('h3', { className: `text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'}` }, '📢 University Announcements'),
-        h('button', { onClick: () => setActiveTab('notices'), className: 'text-xs font-bold text-indigo-500 hover:text-indigo-400' }, 'View All Bulletins →')
+        h('h3', { className: 'text-base font-bold text-white' }, '📢 University Announcements'),
+        h('button', { onClick: () => setActiveTab('notices'), className: 'text-xs font-bold text-indigo-400 hover:text-indigo-300' }, 'View All Bulletins →')
       ),
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
-        h('div', { className: `p-4 rounded-xl border space-y-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
+        h('div', { className: 'p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2' },
           h('div', { className: 'flex items-center justify-between text-xs' },
-            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-500 border border-indigo-500/30' }, 'Academic Examination'),
-            h('span', { className: `font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, '2026-08-01')
+            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' }, 'Academic Examination'),
+            h('span', { className: 'text-slate-400 font-medium' }, '2026-08-01')
           ),
-          h('h4', { className: `font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}` }, 'Fall 2026 Mid-Semester Examination Schedule Published'),
-          h('p', { className: `text-xs font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Official timetables for undergraduate and postgraduate mid-semester examinations have been released.')
+          h('h4', { className: 'font-bold text-white text-sm' }, 'Fall 2026 Mid-Semester Examination Schedule Published'),
+          h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official timetables for undergraduate and postgraduate mid-semester examinations have been released.')
         ),
-        h('div', { className: `p-4 rounded-xl border space-y-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
+        h('div', { className: 'p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2' },
           h('div', { className: 'flex items-center justify-between text-xs' },
-            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' }, 'Research & Innovation'),
-            h('span', { className: `font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, '2026-07-28')
+            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' }, 'Research & Innovation'),
+            h('span', { className: 'text-slate-400 font-medium' }, '2026-07-28')
           ),
-          h('h4', { className: `font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}` }, 'Annual University Innovation & AI Symposium'),
-          h('p', { className: `text-xs font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}` }, 'Faculty and students are invited to submit research abstracts for presentation at the annual symposium.')
+          h('h4', { className: 'font-bold text-white text-sm' }, 'Annual University Innovation & AI Symposium'),
+          h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Faculty and students are invited to submit research abstracts for presentation at the annual symposium.')
         )
       )
     )
@@ -1411,13 +1377,11 @@ function BulletinsPage() {
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, theme } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   if (!user) {
     return h(AuthPage);
   }
-
-  const isLight = theme === 'light';
 
   const renderTab = () => {
     switch (activeTab) {
@@ -1433,7 +1397,7 @@ function App() {
     }
   };
 
-  return h('div', { className: `min-h-screen ${isLight ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans relative transition-colors` },
+  return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative' },
     h(BackgroundVideo),
     h(Navbar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
     h('div', { className: 'flex-1 flex w-full relative z-10 overflow-hidden' },
