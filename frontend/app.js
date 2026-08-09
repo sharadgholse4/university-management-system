@@ -5,7 +5,7 @@
  * Author: Sharad Gholse
  */
 const h = React.createElement;
-const { useState, useEffect, createContext, useContext } = React;
+const { useState, useEffect, useRef, createContext, useContext } = React;
 
 const API_BASE = '/api';
 
@@ -16,7 +16,7 @@ const GOOGLE_CLIENT_ID = '445838676324-impfkq5c9utvu6ff3inh6iv8s67vvuph.apps.goo
 const VIDEO_BG_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_055001_8e16d972-3b2b-441c-86ad-2901a54682f9.mp4';
 
 function BackgroundVideo() {
-  const videoRef = React.useRef(null);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -286,7 +286,7 @@ function getDynamicGreeting(userName) {
     emoji = '☀️';
   } else if (hour >= 17 && hour < 22) {
     timeOfDay = 'Good evening';
-    emoji = '🌆';
+    emoji = '<ctrl42>';
   } else if (hour >= 22 || hour < 5) {
     timeOfDay = 'Good night';
     emoji = '🌙';
@@ -1438,9 +1438,15 @@ function App() {
 }
 
 // Mount React app
-document.addEventListener('DOMContentLoaded', () => {
+function mountApp() {
   const root = document.getElementById('root');
   if (root) {
     ReactDOM.createRoot(root).render(h(AuthProvider, null, h(App)));
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mountApp);
+} else {
+  mountApp();
+}
