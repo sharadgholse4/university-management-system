@@ -2,6 +2,7 @@
  * Vercel Serverless API Endpoint: Course Catalog Management
  * Route: GET /api/courses, POST /api/courses
  */
+import { verifyJwt } from './_jwt.js';
 
 const COURSES = [
   { id: 1, code: 'CSE-101', name: 'Data Structures & Algorithms', department: 'Computer Science', credits: 4, semester: 4, instructor: 'Dr. Robert Smith', enrolled: 48 },
@@ -20,6 +21,15 @@ export default function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '').trim();
+    const claims = verifyJwt(token);
+
+    // Enforce Role-Based Access Control (RBAC): Only Professors and Admins can create courses
+    if (claims && claims.role === 'student') {
+      return res.status(403).json({ success: false, error: 'Forbidden: Students are not authorized to create courses.' });
+    }
+
     const newCourse = {
       id: Date.now(),
       code: req.body?.code || 'CSE-401',
@@ -27,7 +37,7 @@ export default function handler(req, res) {
       department: req.body?.department || 'Computer Science',
       credits: req.body?.credits || 4,
       semester: 4,
-      instructor: req.body?.instructor || 'Dr. Robert Smith',
+      instructor: req.body?.instructor || (claims?.username || 'Dr. Robert Smith'),
       enrolled: 1
     };
     COURSES.unshift(newCourse);

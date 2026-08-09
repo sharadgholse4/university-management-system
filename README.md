@@ -1,18 +1,16 @@
-# 🏛️ EduPortal — University Management System
+# 🏛️ EduPortal — Enterprise Academic Management Platform
 
-A high-performance **University Management System** featuring a **C++17 Crow REST API Backend** and an interactive **React Web Application Frontend**.
-
-Developed by **Sharad Gholse** as a Computer Science & Engineering capstone project.
+A high-performance **University Management System** featuring a **Vite + React 18 + TypeScript Single Page Application (SPA)** with **Vercel Serverless JWT & RBAC API Endpoints** and an optional **C++17 Crow REST API Backend**.
 
 ---
 
 ## 🌟 Key Features
 
-### 🔐 1. Authentication & Role-Based Access Control
-- **Sign In & Sign Up (Registration)**: Dedicated authentication flow for Students and Faculty with department and roll number enrollment.
+### 🔐 1. Authentication & Role-Based Access Control (RBAC)
+- **Sign In & Sign Up (Registration)**: Dedicated registration for Students and Faculty with department and roll number enrollment.
 - **Google Workspace SSO**: Google OAuth 2.0 Single Sign-On integration.
-- **3-Layer Security Roles**: Enforced access control for **Students**, **Professors / Faculty**, and **System Administrators**.
-- **Crypto Password Hashing & JWT**: HMAC-SHA256 JWT token verification and BCrypt password security.
+- **Crypto Password Hashing & HMAC-SHA256 JWT**: Real JWT token generation & server-side verification.
+- **Server-Side RBAC Enforcement**: Role-based access validation preventing unauthorized actions (e.g. course creation, attendance recording, bulletin publication).
 
 ### 👤 2. Academic Profiles & Student Records
 - Student identity records, roll numbers, GPA scores, and department affiliations.
@@ -40,71 +38,44 @@ Developed by **Sharad Gholse** as a Computer Science & Engineering capstone proj
 
 ```
    ┌───────────────────────────────────────────────────────────┐
-   │                React 18 Web Application                   │
-   │      Responsive UI • Tailwind CSS • Context API State     │
+   │             Vite + React 18 + TypeScript SPA              │
+   │      Modular Components • Tailwind CSS • Context API      │
    └─────────────────────────────┬─────────────────────────────┘
                                  │ REST API Calls (/api)
    ┌─────────────────────────────▼─────────────────────────────┐
-   │                C++17 Crow REST API Server                 │
-   │    Controllers • Domain Services • Data Access Layer      │
-   └─────────────────────────────┬─────────────────────────────┘
-                                 │ SQLiteCpp RAII Wrapper
-   ┌─────────────────────────────▼─────────────────────────────┐
-   │                       SQLite Database                     │
+   │            Vercel Serverless Node.js APIs                 │
+   │   HMAC-SHA256 JWT Verification • RBAC Authorization       │
    └───────────────────────────────────────────────────────────┘
 ```
 
-- **Backend**: C++17, Crow REST Framework, SQLiteCpp, CMake
-- **Frontend**: React 18, Tailwind CSS, Web Standard ES Modules
-- **Database**: Embedded SQLite3 Engine
-- **DevOps**: Multi-stage Dockerfile, Vercel CDN static hosting
+- **Frontend**: Vite 5, React 18, TypeScript, Tailwind CSS
+- **Serverless API**: Node.js, HMAC-SHA256 JWT Engine, RBAC Policy
+- **Alternative Backend**: C++17, Crow REST Framework, SQLiteCpp, CMake
+- **Hosting & CI/CD**: Vercel Edge Network
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### 1. Build and Run the C++ Backend (Port 8080)
+### Launch Development Server
 
 ```bash
-# Configure CMake build directory
-cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+# Install dependencies
+npm install
 
-# Compile C++ REST API server
-cmake --build build --config Release --target ums_server
-
-# Launch backend server
-./build/bin/ums_server.exe
-```
-
-The C++ REST API will start listening on `http://localhost:8080/api`.
-
----
-
-### 2. Launch the Web Frontend (Port 3000)
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Launch Node server
-node server.cjs
+# Start Vite HMR Dev Server (Port 3000)
+npm run dev
 ```
 
 Open your browser at **`http://localhost:3000`** to access EduPortal!
 
 ---
 
-## 🧪 Automated Testing
+### Production Build
 
 ```bash
-# Build GoogleTest suites
-cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
-cmake --build build --config Release --target test_user_model test_jwt_service test_student_model test_attendance_model test_result_model test_course_model test_enrollment_model
-
-# Execute tests
-./build/bin/test_user_model.exe
-./build/bin/test_jwt_service.exe
-./build/bin/test_student_model.exe
+# Compile TypeScript & bundle application to dist/
+npm run build
 ```
 
 ---

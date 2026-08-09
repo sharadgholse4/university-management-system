@@ -2,6 +2,8 @@
  * Vercel Serverless API Endpoint: Account Registration
  * Route: POST /api/auth/register
  */
+import { signJwt } from '../_jwt.js';
+
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -11,24 +13,34 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { name, email, username, role, department, rollNumber } = req.body || {};
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed.' });
+  }
 
-  const user = {
+  const { name, email, username, role, department, rollNumber, designation } = req.body || {};
+
+  if (!username || !email || !name) {
+    return res.status(400).json({ success: false, error: 'Missing required registration parameters.' });
+  }
+
+  const newUser = {
     id: Date.now(),
-    username: (username || 'user').toLowerCase().trim(),
-    name: name || 'Registered User',
-    email: email || 'user@university.edu',
+    username: username.toLowerCase().trim(),
+    name: name.trim(),
+    email: email.trim(),
     role: role || 'student',
     department: department || 'Computer Science & Engineering',
-    rollNumber: rollNumber || 'CSE-2026-REG'
+    rollNumber: role === 'student' ? (rollNumber || `CSE-2026-${Math.floor(100 + Math.random() * 900)}`) : null,
+    designation: role === 'professor' ? (designation || 'Assistant Professor') : null
   };
+
+  const jwtToken = signJwt({ userId: newUser.id, username: newUser.username, role: newUser.role, email: newUser.email });
 
   return res.status(201).json({
     success: true,
-    message: 'User account registered successfully.',
     data: {
-      token: `vercel-jwt-${Date.now()}`,
-      user: user
+      user: newUser,
+      token: jwtToken
     }
   });
 }
