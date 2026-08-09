@@ -430,13 +430,14 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
-    const hasRealClientId = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID');
+    const cleanClientId = (GOOGLE_CLIENT_ID || '').trim();
+    const hasRealClientId = cleanClientId && !cleanClientId.includes('YOUR_GOOGLE_CLIENT_ID');
 
     if (hasRealClientId && window.google?.accounts?.oauth2) {
       try {
         const client = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'email profile openid',
+          client_id: cleanClientId,
+          scope: 'email profile',
           callback: async (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
               try {
