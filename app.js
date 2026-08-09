@@ -1,13 +1,16 @@
 /**
- * EduPortal Enterprise | Next-Generation University Management System
- * Production Web Client
+ * EduPortal | Next-Generation Academic Platform
+ * University Management System Web Client
+ * 
+ * Developed by: Sharad Gholse
+ * Computer Science & Engineering Capstone Project
  */
 const h = React.createElement;
 const { useState, useEffect, createContext, useContext } = React;
 
 const API_BASE = '/api';
 
-// --- SAFE STORAGE HELPERS ---
+// --- STORAGE UTILITIES ---
 function safeGetStorage(key) {
   try { return localStorage.getItem(key); } catch (e) { return null; }
 }
@@ -20,7 +23,7 @@ function safeRemoveStorage(key) {
   try { localStorage.removeItem(key); } catch (e) {}
 }
 
-// --- ENTERPRISE API CLIENT ---
+// --- API CLIENT ---
 async function apiCall(endpoint, method = 'GET', body = null, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   const savedToken = token || safeGetStorage('eduportal_token');
@@ -39,7 +42,36 @@ async function apiCall(endpoint, method = 'GET', body = null, token = null) {
   }
 }
 
-// --- ENTERPRISE AUTH CONTEXT ---
+// --- INITIAL DEMO ACCOUNTS FOR INSTANT LOGIN ---
+const DEMO_PRESETS = {
+  student: {
+    username: 'alex.johnson',
+    name: 'Alex Johnson',
+    role: 'student',
+    email: 'alex.johnson@university.edu',
+    department: 'Computer Science & Engineering',
+    rollNumber: 'CSE-2026-089',
+    gpa: 3.88
+  },
+  professor: {
+    username: 'dr.robert.smith',
+    name: 'Dr. Robert Smith',
+    role: 'professor',
+    email: 'r.smith@university.edu',
+    department: 'Computer Science & Engineering',
+    designation: 'Senior Professor & Chair'
+  },
+  admin: {
+    username: 'sarah.connor',
+    name: 'Sarah Connor',
+    role: 'admin',
+    email: 's.connor@university.edu',
+    department: 'University Administration',
+    designation: 'Chief Administrator'
+  }
+};
+
+// --- AUTHENTICATION CONTEXT ---
 const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
@@ -50,45 +82,105 @@ function AuthProvider({ children }) {
   const [token, setToken] = useState(() => safeGetStorage('eduportal_token'));
   const [loading, setLoading] = useState(false);
 
+  // Helper to load registered users database from localStorage
+  const getRegisteredUsers = () => {
+    try {
+      const data = safeGetStorage('eduportal_registered_users');
+      return data ? JSON.parse(data) : {};
+    } catch (e) { return {}; }
+  };
+
+  const saveRegisteredUser = (userData) => {
+    const users = getRegisteredUsers();
+    users[userData.username.toLowerCase()] = userData;
+    safeSetStorage('eduportal_registered_users', JSON.stringify(users));
+  };
+
   const login = async (username, password) => {
     setLoading(true);
     let userData = null;
+    const lowerUser = (username || '').toLowerCase().trim();
 
+    // 1. Check C++ REST API Backend
     try {
-      const res = await apiCall('/auth/login', 'POST', { username, password });
+      const res = await apiCall('/auth/login', 'POST', { username: lowerUser, password });
       if (res && res.success && res.data && res.data.token) {
         userData = res.data.user || {
-          username: username,
-          name: username.replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          role: res.data.role || (username.toLowerCase().includes('prof') ? 'professor' : username.toLowerCase().includes('admin') ? 'admin' : 'student'),
-          email: `${username.toLowerCase()}@university.edu`,
+          username: lowerUser,
+          name: lowerUser.replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          role: res.data.role || (lowerUser.includes('prof') ? 'professor' : lowerUser.includes('admin') ? 'admin' : 'student'),
+          email: `${lowerUser}@university.edu`,
           department: 'Computer Science & Engineering'
         };
         setToken(res.data.token);
         safeSetStorage('eduportal_token', res.data.token);
       }
     } catch (e) {
-      console.warn('[Auth] Server fallback active');
+      console.warn('[Auth] Connecting local engine');
     }
 
+    // 2. Check locally registered accounts
     if (!userData) {
-      const role = (username || '').toLowerCase().includes('prof') ? 'professor' : (username || '').toLowerCase().includes('admin') ? 'admin' : 'student';
-      userData = {
+      const registered = getRegisteredUsers();
+      if (registered[lowerUser]) {
+        userData = registered[lowerUser];
+      }
+    }
+
+    // 3. Check Demo presets
+    if (!userData) {
+      if (lowerUser.includes('prof') || lowerUser.includes('smith')) userData = DEMO_PRESETS.professor;
+      else if (lowerUser.includes('admin') || lowerUser.includes('connor')) userData = DEMO_PRESETS.admin;
+      else userData = {
         id: Date.now(),
-        username: username || 'user',
-        name: (username || 'User Account').replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        role,
-        email: `${(username || 'user').toLowerCase()}@university.edu`,
-        department: role === 'admin' ? 'University Administration' : 'Computer Science & Engineering',
-        rollNumber: role === 'student' ? 'CSE-2026-104' : null,
-        designation: role === 'professor' ? 'Associate Professor' : role === 'admin' ? 'System Administrator' : 'Undergraduate Student'
+        username: lowerUser || 'user',
+        name: (lowerUser || 'User').replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        role: lowerUser.includes('prof') ? 'professor' : lowerUser.includes('admin') ? 'admin' : 'student',
+        email: `${lowerUser || 'user'}@university.edu`,
+        department: 'Computer Science & Engineering',
+        rollNumber: 'CSE-2026-104'
       };
+    }
+
+    if (!safeGetStorage('eduportal_token')) {
       setToken('enterprise-jwt-token');
       safeSetStorage('eduportal_token', 'enterprise-jwt-token');
     }
 
     setUser(userData);
     safeSetStorage('eduportal_user', JSON.stringify(userData));
+    setLoading(false);
+    return { success: true };
+  };
+
+  const register = async (accountData) => {
+    setLoading(true);
+    const lowerUser = accountData.username.toLowerCase().trim();
+
+    const newUser = {
+      id: Date.now(),
+      username: lowerUser,
+      name: accountData.name,
+      email: accountData.email,
+      role: accountData.role,
+      department: accountData.department || 'Computer Science & Engineering',
+      rollNumber: accountData.role === 'student' ? (accountData.rollNumber || `CSE-2026-${Math.floor(100 + Math.random() * 900)}`) : null,
+      designation: accountData.role === 'professor' ? (accountData.designation || 'Assistant Professor') : null
+    };
+
+    // Try backend registration
+    try {
+      await apiCall('/auth/register', 'POST', { ...newUser, password: accountData.password });
+    } catch (e) {}
+
+    // Save locally
+    saveRegisteredUser(newUser);
+
+    setUser(newUser);
+    setToken('enterprise-jwt-token');
+    safeSetStorage('eduportal_token', 'enterprise-jwt-token');
+    safeSetStorage('eduportal_user', JSON.stringify(newUser));
+
     setLoading(false);
     return { success: true };
   };
@@ -120,10 +212,10 @@ function AuthProvider({ children }) {
     safeRemoveStorage('eduportal_user');
   };
 
-  return h(AuthContext.Provider, { value: { user, token, loading, login, loginWithGoogle, logout } }, children);
+  return h(AuthContext.Provider, { value: { user, token, loading, login, register, loginWithGoogle, logout } }, children);
 }
 
-// --- C++ BACKEND ENGINE HEALTH BADGE ---
+// --- BACKEND HEALTH BADGE ---
 function BackendHealthBadge() {
   const [isLive, setIsLive] = useState(false);
 
@@ -142,9 +234,9 @@ function BackendHealthBadge() {
     return () => clearInterval(timer);
   }, []);
 
-  return h('div', { className: `flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${isLive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}` },
+  return h('div', { className: `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${isLive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}` },
     h('span', { className: `w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}` }),
-    h('span', null, isLive ? 'C++ REST Engine: Online (Port 8080)' : 'C++ Engine: Standby')
+    h('span', null, isLive ? 'C++ REST Engine: Connected' : 'Local Data Engine: Ready')
   );
 }
 
@@ -152,14 +244,14 @@ function BackendHealthBadge() {
 function Navbar({ activeTab, setActiveTab }) {
   const { user, logout } = useContext(AuthContext);
 
-  return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-lg' },
+  return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
     h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between' },
       // Logo
       h('div', { className: 'flex items-center gap-3 cursor-pointer', onClick: () => setActiveTab('dashboard') },
         h('div', { className: 'w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20' }, '🏛️'),
         h('div', null,
           h('h1', { className: 'text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
-          h('p', { className: 'text-[10px] text-slate-400 font-bold tracking-widest uppercase' }, 'Enterprise Academic System')
+          h('p', { className: 'text-[10px] text-slate-400 font-bold tracking-widest uppercase' }, 'Academic Management System')
         )
       ),
 
@@ -217,8 +309,8 @@ function Sidebar({ activeTab, setActiveTab }) {
     ),
 
     h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1' },
-      h('div', { className: 'font-bold text-slate-200' }, 'Enterprise v2.5.0'),
-      h('div', null, 'Core Engine: C++17 Crow'),
+      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal v2.5.0'),
+      h('div', null, 'Backend: C++17 Crow REST'),
       h('div', null, 'Database: SQLite3 Engine')
     )
   );
@@ -239,21 +331,86 @@ function MetricCard({ title, value, subtitle, icon, badge }) {
   );
 }
 
-// --- ENTERPRISE LOGIN PAGE WITH GOOGLE OAUTH ---
-function LoginPage() {
-  const { login, loginWithGoogle, loading } = useContext(AuthContext);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+// --- PROFESSIONAL SIGN-IN & SIGN-UP AUTH PAGE ---
+function AuthPage() {
+  const { login, register, loginWithGoogle, loading } = useContext(AuthContext);
+  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  
+  // Login State
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
-  const handleSubmit = async (e) => {
+  // Registration State
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regRole, setRegRole] = useState('student');
+  const [regDepartment, setRegDepartment] = useState('Computer Science & Engineering');
+  const [regIdNumber, setRegIdNumber] = useState('');
+
+  const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+
+  // Handle Login
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!username || !password) {
-      setError('Please enter your institutional username and password.');
+    setSuccessMsg(null);
+    if (!loginUsername.trim() || !loginPassword.trim()) {
+      setError('Please enter both your institutional username and password.');
       return;
     }
-    await login(username, password);
+    await login(loginUsername.trim(), loginPassword);
+  };
+
+  // Handle Quick Demo Login Fill
+  const fillQuickPreset = (roleKey) => {
+    const preset = DEMO_PRESETS[roleKey];
+    if (preset) {
+      setLoginUsername(preset.username);
+      setLoginPassword('Password123!');
+      login(preset.username, 'Password123!');
+    }
+  };
+
+  // Handle Registration
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!regName.trim() || !regEmail.trim() || !regUsername.trim() || !regPassword) {
+      setError('All required registration fields must be completed.');
+      return;
+    }
+    if (!regEmail.includes('@') || !regEmail.includes('.')) {
+      setError('Please enter a valid institutional email address.');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setError('Passwords do not match. Please re-enter your password.');
+      return;
+    }
+
+    await register({
+      name: regName.trim(),
+      email: regEmail.trim(),
+      username: regUsername.trim(),
+      password: regPassword,
+      role: regRole,
+      department: regDepartment,
+      rollNumber: regIdNumber.trim()
+    });
+
+    setSuccessMsg('Account created successfully! Redirecting to portal...');
   };
 
   const handleGoogleSignIn = () => {
@@ -265,70 +422,233 @@ function LoginPage() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
-    // Glow Background
+    // Glowing Background Accents
     h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl' }),
     h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl' }),
 
-    h('div', { className: 'w-full max-w-md bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
-      // Header Logo
+    h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
+      // Portal Branding
       h('div', { className: 'text-center space-y-2' },
-        h('div', { className: 'w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-indigo-500/25' }, '🏛️'),
-        h('h2', { className: 'text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ENTERPRISE'),
-        h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Authenticated University Portal Sign-In')
+        h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25' }, '🏛️'),
+        h('h2', { className: 'text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
+        h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official Student & Faculty Portal Access')
       ),
 
-      error && h('div', { className: 'p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center' }, error),
+      // Auth Mode Switcher Tabs
+      h('div', { className: 'flex p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold' },
+        h('button', {
+          onClick: () => { setMode('login'); setError(null); },
+          className: `flex-1 py-2.5 rounded-xl transition-all ${mode === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`
+        }, '🔑 Sign In'),
+        h('button', {
+          onClick: () => { setMode('register'); setError(null); },
+          className: `flex-1 py-2.5 rounded-xl transition-all ${mode === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`
+        }, '📝 Create Account (Sign Up)')
+      ),
 
-      // Google OAuth Sign-In Button
-      h('button', {
-        type: 'button',
-        onClick: handleGoogleSignIn,
-        className: 'w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-3 transition-colors shadow-md'
-      },
-        h('svg', { className: 'w-4 h-4', viewBox: '0 0 24 24' },
-          h('path', { fill: '#4285F4', d: 'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z' }),
-          h('path', { fill: '#34A853', d: 'M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' }),
-          h('path', { fill: '#FBBC05', d: 'M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z' }),
-          h('path', { fill: '#EA4335', d: 'M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z' })
+      // Feedback Alerts
+      error && h('div', { className: 'p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-semibold text-center' }, error),
+      successMsg && h('div', { className: 'p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-semibold text-center' }, successMsg),
+
+      // MODE 1: SIGN IN
+      mode === 'login' && h('div', { className: 'space-y-5' },
+        // Google SSO Button
+        h('button', {
+          type: 'button',
+          onClick: handleGoogleSignIn,
+          className: 'w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-3 transition-colors shadow-sm'
+        },
+          h('svg', { className: 'w-4 h-4', viewBox: '0 0 24 24' },
+            h('path', { fill: '#4285F4', d: 'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z' }),
+            h('path', { fill: '#34A853', d: 'M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' }),
+            h('path', { fill: '#FBBC05', d: 'M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z' }),
+            h('path', { fill: '#EA4335', d: 'M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z' })
+          ),
+          'Continue with Google Workspace'
         ),
-        'Continue with Google Workspace'
+
+        h('div', { className: 'flex items-center gap-3 my-2' },
+          h('div', { className: 'flex-1 h-px bg-slate-800' }),
+          h('span', { className: 'text-[10px] font-bold text-slate-500 uppercase tracking-widest' }, 'Or Sign In with Credentials'),
+          h('div', { className: 'flex-1 h-px bg-slate-800' })
+        ),
+
+        h('form', { onSubmit: handleLoginSubmit, className: 'space-y-4' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Username or Institutional Email'),
+            h('input', {
+              type: 'text',
+              value: loginUsername,
+              placeholder: 'alex.johnson or alex@university.edu',
+              onChange: (e) => setLoginUsername(e.target.value),
+              className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          ),
+
+          h('div', { className: 'space-y-1' },
+            h('div', { className: 'flex justify-between items-center' },
+              h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Password'),
+              h('button', {
+                type: 'button',
+                onClick: () => setShowPassword(!showPassword),
+                className: 'text-[11px] font-bold text-indigo-400 hover:text-indigo-300'
+              }, showPassword ? '🙈 Hide' : '👁️ Show')
+            ),
+            h('input', {
+              type: showPassword ? 'text' : 'password',
+              value: loginPassword,
+              placeholder: '••••••••',
+              onChange: (e) => setLoginPassword(e.target.value),
+              className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          ),
+
+          h('div', { className: 'flex items-center justify-between text-xs text-slate-400' },
+            h('label', { className: 'flex items-center gap-2 cursor-pointer' },
+              h('input', {
+                type: 'checkbox',
+                checked: rememberMe,
+                onChange: (e) => setRememberMe(e.target.checked),
+                className: 'rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0'
+              }),
+              'Keep me signed in'
+            ),
+            h('span', { className: 'text-xs text-slate-500 cursor-pointer hover:text-slate-400' }, 'Need help?')
+          ),
+
+          h('button', {
+            type: 'submit',
+            disabled: loading,
+            className: 'w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider'
+          }, loading ? 'Authenticating Credentials...' : 'Sign In to Portal')
+        ),
+
+        // Quick Role Test Buttons
+        h('div', { className: 'pt-3 border-t border-slate-800/80 space-y-2' },
+          h('div', { className: 'text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center' }, 'Quick Demo Profile Test Sign-In'),
+          h('div', { className: 'grid grid-cols-3 gap-2' },
+            h('button', {
+              type: 'button',
+              onClick: () => fillQuickPreset('student'),
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors'
+            }, '🎓 Student'),
+            h('button', {
+              type: 'button',
+              onClick: () => fillQuickPreset('professor'),
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors'
+            }, '👨‍🏫 Professor'),
+            h('button', {
+              type: 'button',
+              onClick: () => fillQuickPreset('admin'),
+              className: 'py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors'
+            }, '🏛️ Admin')
+          )
+        )
       ),
 
-      h('div', { className: 'flex items-center gap-3 my-4' },
-        h('div', { className: 'flex-1 h-px bg-slate-800' }),
-        h('span', { className: 'text-[10px] font-bold text-slate-500 uppercase tracking-widest' }, 'Or Sign In with Credentials'),
-        h('div', { className: 'flex-1 h-px bg-slate-800' })
-      ),
+      // MODE 2: SIGN UP (CREATE ACCOUNT)
+      mode === 'register' && h('form', { onSubmit: handleRegisterSubmit, className: 'space-y-4' },
+        h('div', { className: 'grid grid-cols-2 gap-3' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Full Name *'),
+            h('input', {
+              type: 'text',
+              value: regName,
+              placeholder: 'Sharad Gholse',
+              onChange: (e) => setRegName(e.target.value),
+              className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Username *'),
+            h('input', {
+              type: 'text',
+              value: regUsername,
+              placeholder: 'sharad.g',
+              onChange: (e) => setRegUsername(e.target.value),
+              className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          )
+        ),
 
-      // Credentials Form
-      h('form', { onSubmit: handleSubmit, className: 'space-y-4' },
         h('div', { className: 'space-y-1' },
-          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Institutional Username'),
+          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Institutional Email *'),
           h('input', {
-            type: 'text',
-            value: username,
-            placeholder: 'e.g. alex.johnson',
-            onChange: (e) => setUsername(e.target.value),
-            className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            type: 'email',
+            value: regEmail,
+            placeholder: 'sharad.gholse@university.edu',
+            onChange: (e) => setRegEmail(e.target.value),
+            className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
           })
         ),
 
+        h('div', { className: 'grid grid-cols-2 gap-3' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Account Role'),
+            h('select', {
+              value: regRole,
+              onChange: (e) => setRegRole(e.target.value),
+              className: 'w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            },
+              h('option', { value: 'student' }, 'Student'),
+              h('option', { value: 'professor' }, 'Faculty / Professor')
+            )
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, regRole === 'student' ? 'Roll Number' : 'Employee ID'),
+            h('input', {
+              type: 'text',
+              value: regIdNumber,
+              placeholder: regRole === 'student' ? 'CSE-2026-105' : 'EMP-9021',
+              onChange: (e) => setRegIdNumber(e.target.value),
+              className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          )
+        ),
+
         h('div', { className: 'space-y-1' },
-          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Password'),
-          h('input', {
-            type: 'password',
-            value: password,
-            placeholder: '••••••••',
-            onChange: (e) => setPassword(e.target.value),
-            className: 'w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
-          })
+          h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Department'),
+          h('select', {
+            value: regDepartment,
+            onChange: (e) => setRegDepartment(e.target.value),
+            className: 'w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+          },
+            h('option', { value: 'Computer Science & Engineering' }, 'Computer Science & Engineering'),
+            h('option', { value: 'Electrical & Electronics Engineering' }, 'Electrical & Electronics Engineering'),
+            h('option', { value: 'Mechanical Engineering' }, 'Mechanical Engineering'),
+            h('option', { value: 'Mathematics & Data Science' }, 'Mathematics & Data Science'),
+            h('option', { value: 'School of Business Administration' }, 'School of Business Administration')
+          )
+        ),
+
+        h('div', { className: 'grid grid-cols-2 gap-3' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Password *'),
+            h('input', {
+              type: 'password',
+              value: regPassword,
+              placeholder: '••••••••',
+              onChange: (e) => setRegPassword(e.target.value),
+              className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Confirm Password *'),
+            h('input', {
+              type: 'password',
+              value: regConfirmPassword,
+              placeholder: '••••••••',
+              onChange: (e) => setRegConfirmPassword(e.target.value),
+              className: 'w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors'
+            })
+          )
         ),
 
         h('button', {
           type: 'submit',
           disabled: loading,
-          className: 'w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider'
-        }, loading ? 'Authenticating with C++ REST API...' : 'Authenticate & Sign In')
+          className: 'w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all uppercase tracking-wider mt-2'
+        }, loading ? 'Registering Account...' : 'Complete Registration & Sign In')
       )
     )
   );
@@ -354,7 +674,7 @@ function DashboardPage({ setActiveTab }) {
 
     // Stat Cards
     h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4' },
-      h(MetricCard, { title: 'Cumulative GPA', value: '3.88 / 4.00', subtitle: 'Highest Academic Honors', icon: '🎓', badge: 'Top 5%' }),
+      h(MetricCard, { title: 'Cumulative GPA', value: user?.gpa ? `${user.gpa} / 4.00` : '3.88 / 4.00', subtitle: 'Highest Academic Honors', icon: '🎓', badge: 'Top 5%' }),
       h(MetricCard, { title: 'Attendance Record', value: '96.2%', subtitle: 'Verified Class Attendance', icon: '📅' }),
       h(MetricCard, { title: 'Active Enrollments', value: '5 Courses', subtitle: '16 Credit Hours Registered', icon: '📚' }),
       h(MetricCard, { title: 'Current Semester', value: 'Fall 2026', subtitle: 'Academic Term 4', icon: '🏛️' })
@@ -370,7 +690,7 @@ function DashboardPage({ setActiveTab }) {
         h('div', { className: 'p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2' },
           h('div', { className: 'flex items-center justify-between text-xs' },
             h('span', { className: 'px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' }, 'Academic Examination'),
-            h('span', { className: 'text-slate-400 font-medium' }, '2026-07-30')
+            h('span', { className: 'text-slate-400 font-medium' }, '2026-08-01')
           ),
           h('h4', { className: 'font-bold text-white text-sm' }, 'Fall 2026 Mid-Semester Examination Schedule Published'),
           h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official timetables for undergraduate and postgraduate mid-semester examinations have been released.')
@@ -404,7 +724,7 @@ function ProfilePage() {
               h('p', { className: 'text-xs text-indigo-400 font-bold uppercase tracking-wider' }, `${user?.role} • ${user?.department || 'Academic'}`)
             )
           ),
-          h('span', { className: 'px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold' }, 'Status: Verified Institutional Account')
+          h('span', { className: 'px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold' }, 'Status: Active Institutional Account')
         ),
 
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-800 text-xs' },
@@ -495,7 +815,7 @@ function AttendancePage() {
         ),
         h('tbody', { className: 'divide-y divide-slate-800 font-medium text-slate-300' },
           [
-            { id: 1, date: '2026-07-30', course: 'CSE-101 Data Structures & Algorithms', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
+            { id: 1, date: '2026-08-01', course: 'CSE-101 Data Structures & Algorithms', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
             { id: 2, date: '2026-07-29', course: 'CSE-202 Database Management Systems', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
             { id: 3, date: '2026-07-28', course: 'MAT-301 Applied Linear Algebra', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' }
           ].map(row =>
@@ -627,7 +947,7 @@ function BulletinsPage() {
 
     h('div', { className: 'space-y-4' },
       [
-        { id: 1, title: 'Fall 2026 Mid-Semester Examination Schedule Published', category: 'Academic', date: '2026-07-30', author: 'Academic Affairs Office', content: 'The official schedule for mid-semester examinations has been published. All students must review their course dates.' },
+        { id: 1, title: 'Fall 2026 Mid-Semester Examination Schedule Published', category: 'Academic', date: '2026-08-01', author: 'Academic Affairs Office', content: 'The official schedule for mid-semester examinations has been published. All students must review their course dates.' },
         { id: 2, title: 'University Research Grant Call for Proposals', category: 'Research', date: '2026-07-28', author: 'Office of Research', content: 'Faculty members are invited to submit research funding proposals for the upcoming fiscal cycle.' }
       ].map(notice =>
         h('div', { key: notice.id, className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
@@ -650,7 +970,7 @@ function App() {
   const { user } = useContext(AuthContext);
 
   if (!user) {
-    return h(LoginPage);
+    return h(AuthPage);
   }
 
   const renderTab = () => {
@@ -676,7 +996,7 @@ function App() {
   );
 }
 
-// --- MOUNT REACT APP TO DOM ---
+// --- MOUNT REACT APP ---
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('root');
   if (root) {

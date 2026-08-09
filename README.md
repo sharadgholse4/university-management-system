@@ -1,54 +1,52 @@
-# 🏛️ EduPortal Enterprise | University Management System
+# 🏛️ EduPortal — University Management System
 
-An enterprise-grade, high-performance **University Management System** featuring a **C++17 Crow REST API Backend** and a modern **React Web Application Frontend**.
+A high-performance **University Management System** featuring a **C++17 Crow REST API Backend** and an interactive **React Web Application Frontend**.
+
+Developed by **Sharad Gholse** as a Computer Science & Engineering capstone project.
 
 ---
 
-## 🌟 Enterprise Core Modules
+## 🌟 Key Features
 
-### 🔐 1. Identity & Role-Based Access Control (RBAC)
-- **Role-Based Access Control** (**Student**, **Faculty / Professor**, **Administrator**) enforced strictly at the API layer.
-- **JWT Authentication** token issuance and claims verification.
-- **BCrypt Password Security** with salted hashing.
+### 🔐 1. Authentication & Role-Based Access Control
+- **Sign In & Sign Up (Registration)**: Dedicated authentication flow for Students and Faculty with department and roll number enrollment.
+- **Google Workspace SSO**: Google OAuth 2.0 Single Sign-On integration.
+- **3-Layer Security Roles**: Enforced access control for **Students**, **Professors / Faculty**, and **System Administrators**.
+- **Crypto Password Hashing & JWT**: HMAC-SHA256 JWT token verification and BCrypt password security.
 
-### 👤 2. Student & Faculty Profile Management
-- Comprehensive academic profiles, roll numbers, department assignments, and designations.
-- Full linkage between user authentication credentials and student/faculty records.
+### 👤 2. Academic Profiles & Student Records
+- Student identity records, roll numbers, GPA scores, and department affiliations.
+- Faculty designations, department chair badges, and course assignments.
 
 ### 📅 3. Attendance Registry
-- Course-wise attendance recording and compliance tracking.
-- Automated attendance percentage calculations and visual logs.
+- Course-wise attendance logging and compliance metrics.
+- Visual status indicators for class participation.
 
-### 🎓 4. Examination & Grade Transcripts
-- Multi-assessment score recording (Mid-Semester, Final, Laboratory, Assignments).
-- Automated grade letter assignment (A+, A, B, C, F) and grade point conversions.
-- Cumulative GPA (CGPA) calculation engine.
+### 🎓 4. Examinations & Academic Transcripts
+- Score calculation engine across mid-term exams, finals, and lab assessments.
+- Automated letter grade assignment (A+, A, B, C, F) and CGPA calculation.
 
-### 📚 5. Curriculum & Department Catalog
-- Department structures, course credit hours, and semester scheduling.
-- Course assignment to faculty members.
+### 📚 5. Course Catalog & Self-Service Registration
+- University-wide curriculum listings filtered by department and credit hours.
+- Self-service enrollment and registration management.
 
-### 📝 6. Self-Service Course Registration Portal
-- Course enrollment and drop workflows.
-- Capacity validation and student rosters.
-
-### 📊 7. System Analytics & Executive Reports
-- Department metrics breakdown, student grade distribution analytics.
-- Printable / Exportable PDF summary reports.
+### 📢 6. Bulletins & System Analytics
+- University circulars and academic notices.
+- Executive summary metrics and printable PDF reports.
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## 🏗️ Architecture & Tech Stack
 
 ```
    ┌───────────────────────────────────────────────────────────┐
    │                React 18 Web Application                   │
-   │      Enterprise UI • Tailwind CSS • Context API Client    │
+   │      Responsive UI • Tailwind CSS • Context API State     │
    └─────────────────────────────┬─────────────────────────────┘
-                                 │ HTTP / REST API (Port 3000 -> 8080)
+                                 │ REST API Calls (/api)
    ┌─────────────────────────────▼─────────────────────────────┐
    │                C++17 Crow REST API Server                 │
-   │    Controllers • Domain Services • Repository Pattern     │
+   │    Controllers • Domain Services • Data Access Layer      │
    └─────────────────────────────┬─────────────────────────────┘
                                  │ SQLiteCpp RAII Wrapper
    ┌─────────────────────────────▼─────────────────────────────┐
@@ -56,57 +54,60 @@ An enterprise-grade, high-performance **University Management System** featuring
    └───────────────────────────────────────────────────────────┘
 ```
 
-- **Backend**: C++17, Crow REST Framework, SQLiteCpp, CMake, MinGW / GCC.
-- **Frontend**: React 18, Tailwind CSS, Native Web Application.
+- **Backend**: C++17, Crow REST Framework, SQLiteCpp, CMake
+- **Frontend**: React 18, Tailwind CSS, Web Standard ES Modules
+- **Database**: Embedded SQLite3 Engine
+- **DevOps**: Multi-stage Dockerfile, Vercel CDN static hosting
 
 ---
 
-## 🛠️ Deployment & Execution Guide
+## 🚀 Quick Start Guide
 
-### 1. Launch the C++ REST API Core Engine
+### 1. Build and Run the C++ Backend (Port 8080)
 
 ```bash
-# 1. Configure CMake
+# Configure CMake build directory
 cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# 2. Compile Server Executable
+# Compile C++ REST API server
 cmake --build build --config Release --target ums_server
 
-# 3. Start C++ Server (Port 8080)
+# Launch backend server
 ./build/bin/ums_server.exe
 ```
 
+The C++ REST API will start listening on `http://localhost:8080/api`.
+
 ---
 
-### 2. Launch the Web Frontend Server
+### 2. Launch the Web Frontend (Port 3000)
 
 ```bash
 # Navigate to frontend directory
 cd frontend
 
-# Launch Web Server (Port 3000)
+# Launch Node server
 node server.cjs
 ```
 
-Access the application in your browser at: **`http://localhost:3000`**
+Open your browser at **`http://localhost:3000`** to access EduPortal!
 
 ---
 
-## 🧪 Automated Testing Suite
+## 🧪 Automated Testing
 
 ```bash
-# Configure build with testing enabled
+# Build GoogleTest suites
 cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
-
-# Compile test executables
 cmake --build build --config Release --target test_user_model test_jwt_service test_student_model test_attendance_model test_result_model test_course_model test_enrollment_model
 
-# Run GoogleTest suite
+# Execute tests
 ./build/bin/test_user_model.exe
 ./build/bin/test_jwt_service.exe
 ./build/bin/test_student_model.exe
-./build/bin/test_attendance_model.exe
-./build/bin/test_result_model.exe
-./build/bin/test_course_model.exe
-./build/bin/test_enrollment_model.exe
 ```
+
+---
+
+## 📄 License
+This project is open source and available under the [MIT License](LICENSE).
