@@ -544,8 +544,8 @@ function AuthPage() {
 
     // Demo Mode fallback when GOOGLE_CLIENT_ID is not configured
     loginWithGoogle({
-      name: 'Sharad Gholse (Google Workspace SSO)',
-      email: 'sharad.gholse@university.edu',
+      name: 'Alex Johnson (Google Workspace SSO)',
+      email: 'alex.johnson@university.edu',
       picture: ''
     });
   };
@@ -679,7 +679,7 @@ function AuthPage() {
             h('input', {
               type: 'text',
               value: regName,
-              placeholder: 'Sharad Gholse',
+              placeholder: 'Alex Johnson',
               onChange: (e) => setRegName(e.target.value),
               className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
@@ -689,7 +689,7 @@ function AuthPage() {
             h('input', {
               type: 'text',
               value: regUsername,
-              placeholder: 'sharad.g',
+              placeholder: 'alex.j',
               onChange: (e) => setRegUsername(e.target.value),
               className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
             })
@@ -701,7 +701,7 @@ function AuthPage() {
           h('input', {
             type: 'email',
             value: regEmail,
-            placeholder: 'sharad.gholse@university.edu',
+            placeholder: 'alex.johnson@university.edu',
             onChange: (e) => setRegEmail(e.target.value),
             className: 'w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl'
           })
