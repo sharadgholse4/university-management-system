@@ -4,8 +4,12 @@
  * 
  * Author: Sharad Gholse
  */
-const h = React.createElement;
-const { useState, useEffect, useRef, createContext, useContext } = React;
+let h = (...args) => React.createElement(...args);
+const useState = (...args) => React.useState(...args);
+const useEffect = (...args) => React.useEffect(...args);
+const useRef = (...args) => React.useRef(...args);
+const createContext = (...args) => React.createContext(...args);
+const useContext = (...args) => React.useContext(...args);
 
 const API_BASE = '/api';
 
@@ -288,7 +292,7 @@ function getDynamicGreeting(userName) {
     emoji = '☀️';
   } else if (hour >= 17 && hour < 22) {
     timeOfDay = 'Good evening';
-    emoji = '🌆';
+    emoji = '<ctrl42>';
   } else if (hour >= 22 || hour < 5) {
     timeOfDay = 'Good night';
     emoji = '🌙';
@@ -806,6 +810,7 @@ function AuthPage() {
       )
     )
   );
+}
 
 // Overview Dashboard
 function DashboardPage({ setActiveTab }) {
@@ -848,7 +853,7 @@ function DashboardPage({ setActiveTab }) {
         ),
         h('div', { className: `p-4 rounded-xl border space-y-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
           h('div', { className: 'flex items-center justify-between text-xs' },
-            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' }, 'Research & Innovation'),
+            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' }, 'Research & Innovation'),
             h('span', { className: `font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, '2026-07-28')
           ),
           h('h4', { className: `font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}` }, 'Annual University Innovation & AI Symposium'),
@@ -1441,8 +1446,14 @@ function App() {
 // Mount React app
 function mountApp() {
   const root = document.getElementById('root');
-  if (root) {
+  if (!window.React || !window.ReactDOM || !root) {
+    setTimeout(mountApp, 50);
+    return;
+  }
+  try {
     ReactDOM.createRoot(root).render(h(AuthProvider, null, h(App)));
+  } catch (err) {
+    console.error('[EduPortal Mount Error]', err);
   }
 }
 

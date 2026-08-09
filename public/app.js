@@ -4,8 +4,12 @@
  * 
  * Author: Sharad Gholse
  */
-const h = React.createElement;
-const { useState, useEffect, useRef, createContext, useContext } = React;
+let h = (...args) => React.createElement(...args);
+const useState = (...args) => React.useState(...args);
+const useEffect = (...args) => React.useEffect(...args);
+const useRef = (...args) => React.useRef(...args);
+const createContext = (...args) => React.createContext(...args);
+const useContext = (...args) => React.useContext(...args);
 
 const API_BASE = '/api';
 
@@ -793,7 +797,7 @@ function AuthPage() {
               value: regConfirmPassword,
               placeholder: '••••••••',
               onChange: (e) => setRegConfirmPassword(e.target.value),
-              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
+              className: `w-full px-3.5 py-2.5 rounded-xl border-2 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-400' : 'bg-slate-950/90 border-indigo-500/40 text-white placeholder-slate-400 focus:border-indigo-400'}`
             })
           )
         ),
@@ -806,6 +810,7 @@ function AuthPage() {
       )
     )
   );
+}
 
 // Overview Dashboard
 function DashboardPage({ setActiveTab }) {
@@ -848,7 +853,7 @@ function DashboardPage({ setActiveTab }) {
         ),
         h('div', { className: `p-4 rounded-xl border space-y-2 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'}` },
           h('div', { className: 'flex items-center justify-between text-xs' },
-            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' }, 'Research & Innovation'),
+            h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' }, 'Research & Innovation'),
             h('span', { className: `font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}` }, '2026-07-28')
           ),
           h('h4', { className: `font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}` }, 'Annual University Innovation & AI Symposium'),
@@ -1441,8 +1446,14 @@ function App() {
 // Mount React app
 function mountApp() {
   const root = document.getElementById('root');
-  if (root) {
+  if (!window.React || !window.ReactDOM || !root) {
+    setTimeout(mountApp, 50);
+    return;
+  }
+  try {
     ReactDOM.createRoot(root).render(h(AuthProvider, null, h(App)));
+  } catch (err) {
+    console.error('[EduPortal Mount Error]', err);
   }
 }
 

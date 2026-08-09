@@ -4,8 +4,12 @@
  * 
  * Author: Sharad Gholse
  */
-const h = React.createElement;
-const { useState, useEffect, useRef, createContext, useContext } = React;
+let h = (...args) => React.createElement(...args);
+const useState = (...args) => React.useState(...args);
+const useEffect = (...args) => React.useEffect(...args);
+const useRef = (...args) => React.useRef(...args);
+const createContext = (...args) => React.createContext(...args);
+const useContext = (...args) => React.useContext(...args);
 
 const API_BASE = '/api';
 
@@ -1441,8 +1445,14 @@ function App() {
 // Mount React app
 function mountApp() {
   const root = document.getElementById('root');
-  if (root) {
+  if (!window.React || !window.ReactDOM || !root) {
+    setTimeout(mountApp, 50);
+    return;
+  }
+  try {
     ReactDOM.createRoot(root).render(h(AuthProvider, null, h(App)));
+  } catch (err) {
+    console.error('[EduPortal Mount Error]', err);
   }
 }
 

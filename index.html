@@ -65,9 +65,15 @@
     <!-- Google Identity Services (GIS) OAuth 2.0 & JWT SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- React 18 & ReactDOM 18 CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- React 18 & ReactDOM 18 CDN (cdnjs primary, jsdelivr fallback) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script>
+      if (!window.React) {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"><\/script>');
+        document.write('<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"><\/script>');
+      }
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-600 selection:text-white min-h-screen font-sans">
     <div id="root"></div>
