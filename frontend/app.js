@@ -11,7 +11,7 @@ const API_BASE = '/api';
 
 // --- GOOGLE OAUTH 2.0 CLIENT ID CONFIGURATION ---
 // Paste your Client ID from Google Cloud Console below (e.g. '123456789-xyz.apps.googleusercontent.com')
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '445838676324-impfkq5c9utvu6ff3inh6iv8s67vvuph.apps.googleusercontent.com';
 
 // Storage helpers
 function safeGetStorage(key) {
@@ -240,57 +240,46 @@ function AuthProvider({ children }) {
 }
 
 // System status badge
-function BackendHealthBadge() {
-  const [isLive, setIsLive] = useState(false);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await fetch('/api/health');
-        const data = await res.json();
-        setIsLive(data.status === 'ok');
-      } catch (e) {
-        setIsLive(false);
-      }
-    };
-    checkStatus();
-    const timer = setInterval(checkStatus, 6000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return h('div', { className: `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${isLive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}` },
-    h('span', { className: `w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}` }),
-    h('span', null, isLive ? 'C++ REST Engine: Connected' : 'Local Data Engine: Active')
+function SystemStatusBadge() {
+  return h('div', { className: 'hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold' },
+    h('span', { className: 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' }),
+    h('span', null, 'Academic Portal • Online')
   );
 }
 
 // Top Navbar
-function Navbar({ activeTab, setActiveTab }) {
+function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const { user, logout } = useContext(AuthContext);
 
   return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
-    h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between' },
-      h('div', { className: 'flex items-center gap-3 cursor-pointer', onClick: () => setActiveTab('dashboard') },
-        h('div', { className: 'w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20' }, '🏛️'),
-        h('div', null,
-          h('h1', { className: 'text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
-          h('p', { className: 'text-[10px] text-slate-400 font-bold tracking-widest uppercase' }, 'Academic Management System')
+    h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2' },
+      h('div', { className: 'flex items-center gap-3' },
+        h('button', {
+          onClick: () => setMobileOpen(!mobileOpen),
+          className: 'lg:hidden p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-sm'
+        }, mobileOpen ? '✕' : '☰'),
+        h('div', { className: 'flex items-center gap-2.5 cursor-pointer', onClick: () => setActiveTab('dashboard') },
+          h('div', { className: 'w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/20' }, '🏛️'),
+          h('div', null,
+            h('h1', { className: 'text-base sm:text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
+            h('p', { className: 'text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest uppercase hidden xs:block' }, 'Academic System')
+          )
         )
       ),
 
-      h(BackendHealthBadge),
+      h(SystemStatusBadge),
 
-      user && h('div', { className: 'flex items-center gap-4' },
+      user && h('div', { className: 'flex items-center gap-3' },
         h('div', { className: 'text-right hidden sm:block' },
           h('div', { className: 'text-xs font-bold text-slate-100' }, user.name),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wider text-indigo-400' }, `${user.role} • ${user.department || 'Academic'}`)
         ),
         h('button', {
           onClick: logout,
-          className: 'px-3.5 py-1.5 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5'
+          className: 'px-3 py-1.5 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5'
         },
           h('span', null, '🔒'),
-          'Sign Out'
+          h('span', { className: 'hidden sm:inline' }, 'Sign Out')
         )
       )
     )
@@ -298,7 +287,7 @@ function Navbar({ activeTab, setActiveTab }) {
 }
 
 // Sidebar Navigation
-function Sidebar({ activeTab, setActiveTab }) {
+function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const { user } = useContext(AuthContext);
 
   const items = [
@@ -314,13 +303,21 @@ function Sidebar({ activeTab, setActiveTab }) {
 
   const visibleItems = items.filter(item => item.roles.includes(user?.role || 'student'));
 
-  return h('aside', { className: 'w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex flex-col justify-between shrink-0' },
+  const handleSelect = (id) => {
+    setActiveTab(id);
+    if (setMobileOpen) setMobileOpen(false);
+  };
+
+  const navContent = h('div', { className: 'flex flex-col justify-between h-full space-y-4' },
     h('nav', { className: 'space-y-1' },
-      h('div', { className: 'text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-3' }, 'Navigation Portal'),
+      h('div', { className: 'text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-3 flex items-center justify-between' },
+        h('span', null, 'Navigation Portal'),
+        setMobileOpen && h('button', { onClick: () => setMobileOpen(false), className: 'lg:hidden text-slate-400 hover:text-white font-bold text-sm' }, '✕')
+      ),
       visibleItems.map(item =>
         h('button', {
           key: item.id,
-          onClick: () => setActiveTab(item.id),
+          onClick: () => handleSelect(item.id),
           className: `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`
         },
           h('span', { className: 'text-base' }, item.icon),
@@ -330,9 +327,20 @@ function Sidebar({ activeTab, setActiveTab }) {
     ),
 
     h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1' },
-      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal v2.5.0'),
-      h('div', null, 'Backend: C++17 Crow REST'),
-      h('div', null, 'Database: SQLite3 Engine')
+      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal Academic Suite'),
+      h('div', null, 'Institutional Cloud Gateway'),
+      h('div', null, 'Status: Operational')
+    )
+  );
+
+  return h(React.Fragment, null,
+    // Desktop Sidebar (lg screens)
+    h('aside', { className: 'hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]' }, navContent),
+
+    // Mobile / Tablet Drawer (sm & md screens)
+    mobileOpen && h('div', { className: 'lg:hidden fixed inset-0 z-50 flex' },
+      h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm', onClick: () => setMobileOpen(false) }),
+      h('aside', { className: 'relative w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex flex-col justify-between shrink-0 h-full shadow-2xl z-10' }, navContent)
     )
   );
 }
@@ -478,10 +486,10 @@ function AuthPage() {
     h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl' }),
     h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl' }),
 
-    h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
+    h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
       h('div', { className: 'text-center space-y-2' },
         h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25' }, '🏛️'),
-        h('h2', { className: 'text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
+        h('h2', { className: 'text-xl sm:text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official Student & Faculty Portal Access')
       ),
 
@@ -593,7 +601,7 @@ function AuthPage() {
       ),
 
       mode === 'register' && h('form', { onSubmit: handleRegisterSubmit, className: 'space-y-4' },
-        h('div', { className: 'grid grid-cols-2 gap-3' },
+        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
             h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Full Name *'),
             h('input', {
@@ -627,7 +635,7 @@ function AuthPage() {
           })
         ),
 
-        h('div', { className: 'grid grid-cols-2 gap-3' },
+        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
             h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Account Role'),
             h('select', {
@@ -666,7 +674,7 @@ function AuthPage() {
           )
         ),
 
-        h('div', { className: 'grid grid-cols-2 gap-3' },
+        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
             h('label', { className: 'text-[11px] font-bold text-slate-300 uppercase tracking-wider' }, 'Password *'),
             h('input', {
@@ -704,15 +712,15 @@ function DashboardPage({ setActiveTab }) {
   const { user } = useContext(AuthContext);
 
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6' },
+    h('div', { className: 'bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6' },
       h('div', { className: 'space-y-2' },
         h('span', { className: 'px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[11px] font-bold uppercase tracking-wider' }, `Role: ${user?.role}`),
-        h('h2', { className: 'text-3xl font-black tracking-tight' }, `Academic Portal — ${user?.name}`),
+        h('h2', { className: 'text-2xl sm:text-3xl font-black tracking-tight' }, `Academic Portal — ${user?.name}`),
         h('p', { className: 'text-slate-400 text-xs max-w-xl font-medium' }, 'Access institutional records, course schedules, attendance logs, and academic transcripts in real-time.')
       ),
-      h('div', { className: 'flex gap-3' },
-        h('button', { onClick: () => setActiveTab('courses'), className: 'px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors' }, 'Course Catalog'),
-        h('button', { onClick: () => setActiveTab('results'), className: 'px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs border border-slate-700 transition-colors' }, 'View Transcripts')
+      h('div', { className: 'flex flex-wrap gap-3 w-full md:w-auto' },
+        h('button', { onClick: () => setActiveTab('courses'), className: 'flex-1 md:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors' }, 'Course Catalog'),
+        h('button', { onClick: () => setActiveTab('results'), className: 'flex-1 md:flex-initial px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs border border-slate-700 transition-colors' }, 'View Transcripts')
       )
     ),
 
@@ -800,6 +808,7 @@ function CoursesPage() {
   const [selectedDept, setSelectedDept] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // New Course Form State
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
   const [newDept, setNewDept] = useState('Computer Science');
@@ -997,19 +1006,19 @@ function AttendancePage() {
   };
 
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'flex items-center justify-between' },
+    h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-4' },
       h('div', null,
         h('h2', { className: 'text-2xl font-black text-white' }, 'Attendance Management'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Verified attendance records and compliance registry')
       ),
       (user?.role === 'professor' || user?.role === 'admin') && h('button', {
         onClick: () => setShowLogModal(true),
-        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors'
+        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors shrink-0'
       }, '+ Record Attendance')
     ),
 
-    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden' },
-      h('table', { className: 'w-full text-left border-collapse text-xs' },
+    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
+      h('table', { className: 'w-full text-left border-collapse text-xs min-w-[600px]' },
         h('thead', { className: 'bg-slate-950 text-slate-300 font-bold uppercase' },
           h('tr', null,
             h('th', { className: 'p-4' }, 'Date'),
@@ -1082,16 +1091,16 @@ function AttendancePage() {
 // Transcripts and Grades Page
 function ResultsPage() {
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'flex items-center justify-between' },
+    h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-4' },
       h('div', null,
         h('h2', { className: 'text-2xl font-black text-white' }, 'Academic Transcripts & Grades'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official examination scores and cumulative GPA metrics')
       ),
-      h('div', { className: 'px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl text-xs' }, 'Cumulative GPA: 3.88 / 4.00')
+      h('div', { className: 'px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl text-xs shrink-0 self-start sm:self-auto' }, 'Cumulative GPA: 3.88 / 4.00')
     ),
 
-    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden' },
-      h('table', { className: 'w-full text-left border-collapse text-xs' },
+    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
+      h('table', { className: 'w-full text-left border-collapse text-xs min-w-[600px]' },
         h('thead', { className: 'bg-slate-950 text-slate-300 font-bold uppercase' },
           h('tr', null,
             h('th', { className: 'p-4' }, 'Course'),
@@ -1166,15 +1175,15 @@ function EnrollmentPage() {
 // Reports Page
 function ReportsPage() {
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'flex items-center justify-between' },
+    h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-4' },
       h('div', null,
         h('h2', { className: 'text-2xl font-black text-white' }, 'Institutional Reports & Analytics'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'System analytics, enrollment distributions, and official reports')
       ),
-      h('button', { onClick: () => window.print(), className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors' }, '📄 Export Official PDF')
+      h('button', { onClick: () => window.print(), className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors shrink-0' }, '📄 Export Official PDF')
     ),
 
-    h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+    h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4' },
       h(MetricCard, { title: 'Registered Students', value: '1,840', subtitle: 'Across All Departments', icon: '👥' }),
       h(MetricCard, { title: 'Academic Faculty', value: '112', subtitle: 'Full-Time Professors', icon: '👨‍🏫' }),
       h(MetricCard, { title: 'Average Attendance', value: '94.8%', subtitle: 'Fall Term 2026', icon: '📈' })
@@ -1214,14 +1223,14 @@ function BulletinsPage() {
   };
 
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'flex items-center justify-between' },
+    h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-4' },
       h('div', null,
         h('h2', { className: 'text-2xl font-black text-white' }, 'University Bulletins'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official university circulars, academic notices, and institutional updates')
       ),
       (user?.role === 'professor' || user?.role === 'admin') && h('button', {
         onClick: () => setShowAddNoticeModal(true),
-        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors'
+        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors shrink-0'
       }, '+ Publish Announcement')
     ),
 
@@ -1292,6 +1301,7 @@ function BulletinsPage() {
 // Main App component
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useContext(AuthContext);
 
   if (!user) {
@@ -1313,10 +1323,10 @@ function App() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans' },
-    h(Navbar, { activeTab, setActiveTab }),
-    h('div', { className: 'flex-1 flex w-full' },
-      h(Sidebar, { activeTab, setActiveTab }),
-      h('main', { className: 'flex-1 p-6 md:p-8 overflow-y-auto' }, renderTab())
+    h(Navbar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
+    h('div', { className: 'flex-1 flex w-full relative overflow-hidden' },
+      h(Sidebar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
+      h('main', { className: 'flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-full' }, renderTab())
     )
   );
 }

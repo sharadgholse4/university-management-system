@@ -240,57 +240,46 @@ function AuthProvider({ children }) {
 }
 
 // System status badge
-function BackendHealthBadge() {
-  const [isLive, setIsLive] = useState(false);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await fetch('/api/health');
-        const data = await res.json();
-        setIsLive(data.status === 'ok');
-      } catch (e) {
-        setIsLive(false);
-      }
-    };
-    checkStatus();
-    const timer = setInterval(checkStatus, 6000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return h('div', { className: `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${isLive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}` },
-    h('span', { className: `w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}` }),
-    h('span', null, isLive ? 'C++ REST Engine: Connected' : 'Local Data Engine: Active')
+function SystemStatusBadge() {
+  return h('div', { className: 'hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold' },
+    h('span', { className: 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' }),
+    h('span', null, 'Academic Portal • Online')
   );
 }
 
 // Top Navbar
-function Navbar({ activeTab, setActiveTab }) {
+function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const { user, logout } = useContext(AuthContext);
 
   return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
-    h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between' },
-      h('div', { className: 'flex items-center gap-3 cursor-pointer', onClick: () => setActiveTab('dashboard') },
-        h('div', { className: 'w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20' }, '🏛️'),
-        h('div', null,
-          h('h1', { className: 'text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
-          h('p', { className: 'text-[10px] text-slate-400 font-bold tracking-widest uppercase' }, 'Academic Management System')
+    h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2' },
+      h('div', { className: 'flex items-center gap-3' },
+        h('button', {
+          onClick: () => setMobileOpen(!mobileOpen),
+          className: 'lg:hidden p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-sm'
+        }, mobileOpen ? '✕' : '☰'),
+        h('div', { className: 'flex items-center gap-2.5 cursor-pointer', onClick: () => setActiveTab('dashboard') },
+          h('div', { className: 'w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/20' }, '🏛️'),
+          h('div', null,
+            h('h1', { className: 'text-base sm:text-lg font-extrabold tracking-tight text-white' }, 'EDUPORTAL'),
+            h('p', { className: 'text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest uppercase hidden xs:block' }, 'Academic System')
+          )
         )
       ),
 
-      h(BackendHealthBadge),
+      h(SystemStatusBadge),
 
-      user && h('div', { className: 'flex items-center gap-4' },
+      user && h('div', { className: 'flex items-center gap-3' },
         h('div', { className: 'text-right hidden sm:block' },
           h('div', { className: 'text-xs font-bold text-slate-100' }, user.name),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wider text-indigo-400' }, `${user.role} • ${user.department || 'Academic'}`)
         ),
         h('button', {
           onClick: logout,
-          className: 'px-3.5 py-1.5 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5'
+          className: 'px-3 py-1.5 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5'
         },
           h('span', null, '🔒'),
-          'Sign Out'
+          h('span', { className: 'hidden sm:inline' }, 'Sign Out')
         )
       )
     )
@@ -298,7 +287,7 @@ function Navbar({ activeTab, setActiveTab }) {
 }
 
 // Sidebar Navigation
-function Sidebar({ activeTab, setActiveTab }) {
+function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const { user } = useContext(AuthContext);
 
   const items = [
@@ -314,13 +303,21 @@ function Sidebar({ activeTab, setActiveTab }) {
 
   const visibleItems = items.filter(item => item.roles.includes(user?.role || 'student'));
 
-  return h('aside', { className: 'w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex flex-col justify-between shrink-0' },
+  const handleSelect = (id) => {
+    setActiveTab(id);
+    if (setMobileOpen) setMobileOpen(false);
+  };
+
+  const navContent = h('div', { className: 'flex flex-col justify-between h-full space-y-4' },
     h('nav', { className: 'space-y-1' },
-      h('div', { className: 'text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-3' }, 'Navigation Portal'),
+      h('div', { className: 'text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-3 flex items-center justify-between' },
+        h('span', null, 'Navigation Portal'),
+        setMobileOpen && h('button', { onClick: () => setMobileOpen(false), className: 'lg:hidden text-slate-400 hover:text-white font-bold text-sm' }, '✕')
+      ),
       visibleItems.map(item =>
         h('button', {
           key: item.id,
-          onClick: () => setActiveTab(item.id),
+          onClick: () => handleSelect(item.id),
           className: `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`
         },
           h('span', { className: 'text-base' }, item.icon),
@@ -330,9 +327,20 @@ function Sidebar({ activeTab, setActiveTab }) {
     ),
 
     h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1' },
-      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal v2.5.0'),
-      h('div', null, 'Backend: C++17 Crow REST'),
-      h('div', null, 'Database: SQLite3 Engine')
+      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal Academic Suite'),
+      h('div', null, 'Institutional Cloud Gateway'),
+      h('div', null, 'Status: Operational')
+    )
+  );
+
+  return h(React.Fragment, null,
+    // Desktop Sidebar (lg screens)
+    h('aside', { className: 'hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]' }, navContent),
+
+    // Mobile / Tablet Drawer (sm & md screens)
+    mobileOpen && h('div', { className: 'lg:hidden fixed inset-0 z-50 flex' },
+      h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm', onClick: () => setMobileOpen(false) }),
+      h('aside', { className: 'relative w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex flex-col justify-between shrink-0 h-full shadow-2xl z-10' }, navContent)
     )
   );
 }
@@ -1296,6 +1304,7 @@ function BulletinsPage() {
 // Main App component
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useContext(AuthContext);
 
   if (!user) {
@@ -1317,10 +1326,10 @@ function App() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans' },
-    h(Navbar, { activeTab, setActiveTab }),
-    h('div', { className: 'flex-1 flex w-full' },
-      h(Sidebar, { activeTab, setActiveTab }),
-      h('main', { className: 'flex-1 p-6 md:p-8 overflow-y-auto' }, renderTab())
+    h(Navbar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
+    h('div', { className: 'flex-1 flex w-full relative overflow-hidden' },
+      h(Sidebar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
+      h('main', { className: 'flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-full' }, renderTab())
     )
   );
 }
