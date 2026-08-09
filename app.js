@@ -11,7 +11,7 @@ const API_BASE = '/api';
 
 // --- GOOGLE OAUTH 2.0 CLIENT ID CONFIGURATION ---
 // Paste your Client ID from Google Cloud Console below (e.g. '123456789-xyz.apps.googleusercontent.com')
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '445838676324-impfkq5c9utvu6ff3inh6iv8s67vvuph.apps.googleusercontent.com';
 
 // Storage helpers
 function safeGetStorage(key) {
