@@ -1,8 +1,9 @@
 {
-  "version": 2,
   "cleanUrls": true,
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/((?!api|app\\.js|frontend|public|favicon\\.ico).*)",
+      "destination": "/index.html"
+    }
   ]
 }
