@@ -326,10 +326,12 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       )
     ),
 
-    h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1' },
-      h('div', { className: 'font-bold text-slate-200' }, 'EduPortal Academic Suite'),
-      h('div', null, 'Institutional Cloud Gateway'),
-      h('div', null, 'Status: Operational')
+    h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1 text-center font-medium' },
+      h('div', { className: 'font-bold text-slate-300' }, '© 2026 EduPortal'),
+      h('div', { className: 'flex items-center justify-center gap-1 text-slate-400' },
+        'Made with ',
+        h('span', { className: 'text-rose-500 text-xs' }, '❤️')
+      )
     )
   );
 
