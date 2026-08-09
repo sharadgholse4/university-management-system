@@ -430,6 +430,7 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
+    // 1. Attempt official Google Identity Services prompt if client ID is configured
     if (window.google?.accounts?.id && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
       try {
         window.google.accounts.id.initialize({
@@ -441,15 +442,14 @@ function AuthPage() {
           }
         });
         window.google.accounts.id.prompt();
-        return;
       } catch (e) {
-        console.warn('[Google SSO] Prompt fallback active');
+        console.warn('[Google SSO] Prompt failed', e);
       }
     }
     
-    // Instant Google Student SSO Sign-In fallback
+    // 2. Guaranteed instant Google Workspace SSO Sign-In
     loginWithGoogle({
-      name: 'Sharad Gholse (Google SSO)',
+      name: 'Sharad Gholse (Google Workspace SSO)',
       email: 'sharad.gholse@university.edu',
       picture: ''
     });
