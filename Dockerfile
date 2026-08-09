@@ -16,9 +16,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 
-# Configure and compile
+# Configure and compile with single job -j 1 to prevent OOM on free cloud tiers (Render 512MB RAM limit)
 RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-RUN cmake --build build --config Release --target ums_server
+RUN cmake --build build --config Release --target ums_server -- -j 1
 
 # Final lightweight runner image
 FROM ubuntu:24.04
