@@ -174,21 +174,52 @@ function AuthProvider({ children }) {
     return { success: true };
   };
 
-  const loginWithGoogle = async (googleUser) => {
+  const loginWithGoogle = async (credentialOrUser) => {
     setLoading(true);
-    const gUser = {
-      id: Date.now(),
-      username: googleUser.email.split('@')[0],
-      name: googleUser.name || 'Google User',
-      email: googleUser.email,
-      role: 'student',
-      department: 'Computer Science & Engineering',
-      rollNumber: 'CSE-2026-GGL',
-      picture: googleUser.picture
-    };
+    let gUser = null;
+    let rawJwtToken = 'google-oauth-token';
+
+    if (typeof credentialOrUser === 'string') {
+      rawJwtToken = credentialOrUser;
+      try {
+        const base64Url = credentialOrUser.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const payload = JSON.parse(jsonPayload);
+
+        gUser = {
+          id: payload.sub || Date.now(),
+          username: payload.email ? payload.email.split('@')[0] : 'google.student',
+          name: payload.name || 'Google Student',
+          email: payload.email || 'google.student@university.edu',
+          role: 'student',
+          department: 'Computer Science & Engineering',
+          rollNumber: `CSE-2026-GGL`,
+          picture: payload.picture || '',
+          googleVerified: true
+        };
+      } catch (e) {
+        console.warn('[Google Auth] Failed to parse JWT ID token payload');
+      }
+    }
+
+    if (!gUser) {
+      gUser = {
+        id: Date.now(),
+        username: (credentialOrUser?.email || 'google.student').split('@')[0],
+        name: credentialOrUser?.name || 'Google Student',
+        email: credentialOrUser?.email || 'google.student@university.edu',
+        role: 'student',
+        department: 'Computer Science & Engineering',
+        rollNumber: 'CSE-2026-GGL',
+        picture: credentialOrUser?.picture || '',
+        googleVerified: true
+      };
+    }
+
     setUser(gUser);
-    setToken('google-oauth-token');
-    safeSetStorage('eduportal_token', 'google-oauth-token');
+    setToken(rawJwtToken);
+    safeSetStorage('eduportal_token', rawJwtToken);
     safeSetStorage('eduportal_user', JSON.stringify(gUser));
     setLoading(false);
     return { success: true };
