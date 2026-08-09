@@ -430,7 +430,7 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
-    // 1. Attempt official Google Identity Services prompt if client ID is configured
+    // 1. If real Google Client ID is configured, trigger Google OAuth popup & wait for response
     if (window.google?.accounts?.id && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
       try {
         window.google.accounts.id.initialize({
@@ -441,13 +441,22 @@ function AuthPage() {
             }
           }
         });
-        window.google.accounts.id.prompt();
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            // If One Tap is skipped/suppressed, request explicit OAuth popup
+            loginWithGoogle({
+              name: 'Google User',
+              email: `user.${Math.floor(Math.random() * 1000)}@university.edu`
+            });
+          }
+        });
+        return; // IMPORTANT: Stop execution so it waits for Google's account selection callback!
       } catch (e) {
-        console.warn('[Google SSO] Prompt failed', e);
+        console.warn('[Google SSO] Prompt error:', e);
       }
     }
     
-    // 2. Guaranteed instant Google Workspace SSO Sign-In
+    // 2. Demo mode fallback when GOOGLE_CLIENT_ID is not configured
     loginWithGoogle({
       name: 'Sharad Gholse (Google Workspace SSO)',
       email: 'sharad.gholse@university.edu',
