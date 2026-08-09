@@ -239,11 +239,43 @@ function AuthProvider({ children }) {
   return h(AuthContext.Provider, { value: { user, token, loading, login, register, loginWithGoogle, logout } }, children);
 }
 
-// System status badge
-function SystemStatusBadge() {
-  return h('div', { className: 'hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold' },
-    h('span', { className: 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' }),
-    h('span', null, 'Academic Portal • Online')
+// Dynamic Time-of-Day Greeting Helper
+function getDynamicGreeting(userName) {
+  const hour = new Date().getHours();
+  let timeOfDay = 'Good morning';
+  let emoji = '🌅';
+
+  if (hour >= 12 && hour < 17) {
+    timeOfDay = 'Good afternoon';
+    emoji = '☀️';
+  } else if (hour >= 17 && hour < 22) {
+    timeOfDay = 'Good evening';
+    emoji = '🌆';
+  } else if (hour >= 22 || hour < 5) {
+    timeOfDay = 'Good night';
+    emoji = '🌙';
+  }
+
+  const firstName = (userName || '').split(' ')[0] || 'User';
+  return `${emoji} ${timeOfDay}, ${firstName}!`;
+}
+
+// Time-aware Navbar Greeting Badge
+function DynamicGreetingBadge() {
+  const { user } = useContext(AuthContext);
+  const [greeting, setGreeting] = useState(() => getDynamicGreeting(user?.name));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setGreeting(getDynamicGreeting(user?.name));
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [user]);
+
+  if (!user) return null;
+
+  return h('div', { className: 'hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold shadow-sm' },
+    h('span', null, greeting)
   );
 }
 
@@ -267,7 +299,7 @@ function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
         )
       ),
 
-      h(SystemStatusBadge),
+      h(DynamicGreetingBadge),
 
       user && h('div', { className: 'flex items-center gap-3' },
         h('div', { className: 'text-right hidden sm:block' },
