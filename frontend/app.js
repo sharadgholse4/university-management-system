@@ -1,16 +1,15 @@
 /**
- * EduPortal | Next-Generation Academic Platform
- * University Management System Web Client
- * 
- * Developed by: Sharad Gholse
+ * EduPortal | Academic Management Platform
  * Computer Science & Engineering Capstone Project
+ * 
+ * Author: Sharad Gholse
  */
 const h = React.createElement;
 const { useState, useEffect, createContext, useContext } = React;
 
 const API_BASE = '/api';
 
-// --- STORAGE UTILITIES ---
+// Storage helpers
 function safeGetStorage(key) {
   try { return localStorage.getItem(key); } catch (e) { return null; }
 }
@@ -23,7 +22,7 @@ function safeRemoveStorage(key) {
   try { localStorage.removeItem(key); } catch (e) {}
 }
 
-// --- API CLIENT ---
+// API client
 async function apiCall(endpoint, method = 'GET', body = null, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   const savedToken = token || safeGetStorage('eduportal_token');
@@ -37,12 +36,11 @@ async function apiCall(endpoint, method = 'GET', body = null, token = null) {
     const data = await res.json();
     return data;
   } catch (err) {
-    console.error(`[API Error] ${endpoint}:`, err);
     return { success: false, error: 'Network error communicating with server.' };
   }
 }
 
-// --- INITIAL DEMO ACCOUNTS FOR INSTANT LOGIN ---
+// Demo account presets
 const DEMO_PRESETS = {
   student: {
     username: 'alex.johnson',
@@ -59,7 +57,7 @@ const DEMO_PRESETS = {
     role: 'professor',
     email: 'r.smith@university.edu',
     department: 'Computer Science & Engineering',
-    designation: 'Senior Professor & Chair'
+    designation: 'Senior Professor & Department Chair'
   },
   admin: {
     username: 'sarah.connor',
@@ -67,11 +65,10 @@ const DEMO_PRESETS = {
     role: 'admin',
     email: 's.connor@university.edu',
     department: 'University Administration',
-    designation: 'Chief Administrator'
+    designation: 'Head Administrator'
   }
 };
 
-// --- AUTHENTICATION CONTEXT ---
 const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
@@ -82,7 +79,6 @@ function AuthProvider({ children }) {
   const [token, setToken] = useState(() => safeGetStorage('eduportal_token'));
   const [loading, setLoading] = useState(false);
 
-  // Helper to load registered users database from localStorage
   const getRegisteredUsers = () => {
     try {
       const data = safeGetStorage('eduportal_registered_users');
@@ -101,7 +97,6 @@ function AuthProvider({ children }) {
     let userData = null;
     const lowerUser = (username || '').toLowerCase().trim();
 
-    // 1. Check C++ REST API Backend
     try {
       const res = await apiCall('/auth/login', 'POST', { username: lowerUser, password });
       if (res && res.success && res.data && res.data.token) {
@@ -115,11 +110,8 @@ function AuthProvider({ children }) {
         setToken(res.data.token);
         safeSetStorage('eduportal_token', res.data.token);
       }
-    } catch (e) {
-      console.warn('[Auth] Connecting local engine');
-    }
+    } catch (e) {}
 
-    // 2. Check locally registered accounts
     if (!userData) {
       const registered = getRegisteredUsers();
       if (registered[lowerUser]) {
@@ -127,14 +119,13 @@ function AuthProvider({ children }) {
       }
     }
 
-    // 3. Check Demo presets
     if (!userData) {
       if (lowerUser.includes('prof') || lowerUser.includes('smith')) userData = DEMO_PRESETS.professor;
       else if (lowerUser.includes('admin') || lowerUser.includes('connor')) userData = DEMO_PRESETS.admin;
       else userData = {
         id: Date.now(),
         username: lowerUser || 'user',
-        name: (lowerUser || 'User').replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        name: (lowerUser || 'User Account').replace('.', ' ').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
         role: lowerUser.includes('prof') ? 'professor' : lowerUser.includes('admin') ? 'admin' : 'student',
         email: `${lowerUser || 'user'}@university.edu`,
         department: 'Computer Science & Engineering',
@@ -168,12 +159,10 @@ function AuthProvider({ children }) {
       designation: accountData.role === 'professor' ? (accountData.designation || 'Assistant Professor') : null
     };
 
-    // Try backend registration
     try {
       await apiCall('/auth/register', 'POST', { ...newUser, password: accountData.password });
     } catch (e) {}
 
-    // Save locally
     saveRegisteredUser(newUser);
 
     setUser(newUser);
@@ -215,7 +204,7 @@ function AuthProvider({ children }) {
   return h(AuthContext.Provider, { value: { user, token, loading, login, register, loginWithGoogle, logout } }, children);
 }
 
-// --- BACKEND HEALTH BADGE ---
+// System status badge
 function BackendHealthBadge() {
   const [isLive, setIsLive] = useState(false);
 
@@ -236,17 +225,16 @@ function BackendHealthBadge() {
 
   return h('div', { className: `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${isLive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}` },
     h('span', { className: `w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}` }),
-    h('span', null, isLive ? 'C++ REST Engine: Connected' : 'Local Data Engine: Ready')
+    h('span', null, isLive ? 'C++ REST Engine: Connected' : 'Local Data Engine: Active')
   );
 }
 
-// --- TOP NAVBAR ---
+// Top Navbar
 function Navbar({ activeTab, setActiveTab }) {
   const { user, logout } = useContext(AuthContext);
 
   return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
     h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between' },
-      // Logo
       h('div', { className: 'flex items-center gap-3 cursor-pointer', onClick: () => setActiveTab('dashboard') },
         h('div', { className: 'w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20' }, '🏛️'),
         h('div', null,
@@ -255,10 +243,8 @@ function Navbar({ activeTab, setActiveTab }) {
         )
       ),
 
-      // System Health Badge
       h(BackendHealthBadge),
 
-      // User Profile & Sign Out
       user && h('div', { className: 'flex items-center gap-4' },
         h('div', { className: 'text-right hidden sm:block' },
           h('div', { className: 'text-xs font-bold text-slate-100' }, user.name),
@@ -276,7 +262,7 @@ function Navbar({ activeTab, setActiveTab }) {
   );
 }
 
-// --- SIDEBAR NAVIGATION ---
+// Sidebar Navigation
 function Sidebar({ activeTab, setActiveTab }) {
   const { user } = useContext(AuthContext);
 
@@ -316,7 +302,7 @@ function Sidebar({ activeTab, setActiveTab }) {
   );
 }
 
-// --- METRIC CARD ---
+// Metric Card Component
 function MetricCard({ title, value, subtitle, icon, badge }) {
   return h('div', { className: 'bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-2' },
     h('div', { className: 'flex items-center justify-between' },
@@ -331,18 +317,16 @@ function MetricCard({ title, value, subtitle, icon, badge }) {
   );
 }
 
-// --- PROFESSIONAL SIGN-IN & SIGN-UP AUTH PAGE ---
+// Auth Component (Sign In & Sign Up)
 function AuthPage() {
   const { login, register, loginWithGoogle, loading } = useContext(AuthContext);
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login');
   
-  // Login State
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Registration State
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regUsername, setRegUsername] = useState('');
@@ -355,7 +339,6 @@ function AuthPage() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  // Handle Login
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -367,7 +350,6 @@ function AuthPage() {
     await login(loginUsername.trim(), loginPassword);
   };
 
-  // Handle Quick Demo Login Fill
   const fillQuickPreset = (roleKey) => {
     const preset = DEMO_PRESETS[roleKey];
     if (preset) {
@@ -377,7 +359,6 @@ function AuthPage() {
     }
   };
 
-  // Handle Registration
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -422,19 +403,16 @@ function AuthPage() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
-    // Glowing Background Accents
     h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl' }),
     h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl' }),
 
     h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
-      // Portal Branding
       h('div', { className: 'text-center space-y-2' },
         h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25' }, '🏛️'),
         h('h2', { className: 'text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
         h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official Student & Faculty Portal Access')
       ),
 
-      // Auth Mode Switcher Tabs
       h('div', { className: 'flex p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold' },
         h('button', {
           onClick: () => { setMode('login'); setError(null); },
@@ -446,13 +424,10 @@ function AuthPage() {
         }, '📝 Create Account (Sign Up)')
       ),
 
-      // Feedback Alerts
       error && h('div', { className: 'p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-semibold text-center' }, error),
       successMsg && h('div', { className: 'p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-semibold text-center' }, successMsg),
 
-      // MODE 1: SIGN IN
       mode === 'login' && h('div', { className: 'space-y-5' },
-        // Google SSO Button
         h('button', {
           type: 'button',
           onClick: handleGoogleSignIn,
@@ -523,7 +498,6 @@ function AuthPage() {
           }, loading ? 'Authenticating Credentials...' : 'Sign In to Portal')
         ),
 
-        // Quick Role Test Buttons
         h('div', { className: 'pt-3 border-t border-slate-800/80 space-y-2' },
           h('div', { className: 'text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center' }, 'Quick Demo Profile Test Sign-In'),
           h('div', { className: 'grid grid-cols-3 gap-2' },
@@ -546,7 +520,6 @@ function AuthPage() {
         )
       ),
 
-      // MODE 2: SIGN UP (CREATE ACCOUNT)
       mode === 'register' && h('form', { onSubmit: handleRegisterSubmit, className: 'space-y-4' },
         h('div', { className: 'grid grid-cols-2 gap-3' },
           h('div', { className: 'space-y-1' },
@@ -654,12 +627,11 @@ function AuthPage() {
   );
 }
 
-// --- OVERVIEW DASHBOARD ---
+// Overview Dashboard
 function DashboardPage({ setActiveTab }) {
   const { user } = useContext(AuthContext);
 
   return h('div', { className: 'space-y-6' },
-    // Header Banner
     h('div', { className: 'bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6' },
       h('div', { className: 'space-y-2' },
         h('span', { className: 'px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[11px] font-bold uppercase tracking-wider' }, `Role: ${user?.role}`),
@@ -672,7 +644,6 @@ function DashboardPage({ setActiveTab }) {
       )
     ),
 
-    // Stat Cards
     h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4' },
       h(MetricCard, { title: 'Cumulative GPA', value: user?.gpa ? `${user.gpa} / 4.00` : '3.88 / 4.00', subtitle: 'Highest Academic Honors', icon: '🎓', badge: 'Top 5%' }),
       h(MetricCard, { title: 'Attendance Record', value: '96.2%', subtitle: 'Verified Class Attendance', icon: '📅' }),
@@ -680,7 +651,6 @@ function DashboardPage({ setActiveTab }) {
       h(MetricCard, { title: 'Current Semester', value: 'Fall 2026', subtitle: 'Academic Term 4', icon: '🏛️' })
     ),
 
-    // Bulletins Section
     h('div', { className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4' },
       h('div', { className: 'flex items-center justify-between' },
         h('h3', { className: 'text-base font-bold text-white' }, '📢 University Announcements'),
@@ -708,7 +678,7 @@ function DashboardPage({ setActiveTab }) {
   );
 }
 
-// --- PROFILE PAGE ---
+// Profile Page
 function ProfilePage() {
   const { user } = useContext(AuthContext);
 
@@ -750,9 +720,19 @@ function ProfilePage() {
   );
 }
 
-// --- COURSES PAGE ---
+// Interactive Course Catalog Component
 function CoursesPage() {
+  const { user } = useContext(AuthContext);
   const [courses, setCourses] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDept, setSelectedDept] = useState('All');
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [newCode, setNewCode] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newDept, setNewDept] = useState('Computer Science');
+  const [newCredits, setNewCredits] = useState(4);
+  const [newInstructor, setNewInstructor] = useState(user?.name || 'Dr. Robert Smith');
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -760,25 +740,88 @@ function CoursesPage() {
       if (res && res.success && Array.isArray(res.data)) {
         setCourses(res.data);
       } else {
-        setCourses([
+        const saved = safeGetStorage('eduportal_courses');
+        if (saved) {
+          try { setCourses(JSON.parse(saved)); return; } catch(e){}
+        }
+        const initial = [
           { id: 1, code: 'CSE-101', name: 'Data Structures & Algorithms', department: 'Computer Science', credits: 4, semester: 4, instructor: 'Dr. Robert Smith', enrolled: 48 },
           { id: 2, code: 'CSE-202', name: 'Relational Database Management Systems', department: 'Computer Science', credits: 4, semester: 4, instructor: 'Dr. Robert Smith', enrolled: 42 },
           { id: 3, code: 'EEE-105', name: 'Microprocessor Systems & Architecture', department: 'Electrical Engineering', credits: 3, semester: 2, instructor: 'Prof. Alan Turing', enrolled: 35 },
           { id: 4, code: 'MAT-301', name: 'Applied Linear Algebra & Statistics', department: 'Mathematics', credits: 3, semester: 3, instructor: 'Dr. Ada Lovelace', enrolled: 55 }
-        ]);
+        ];
+        setCourses(initial);
+        safeSetStorage('eduportal_courses', JSON.stringify(initial));
       }
     };
     fetchCourses();
   }, []);
 
+  const handleAddCourse = (e) => {
+    e.preventDefault();
+    if (!newCode || !newName) return;
+
+    const courseObj = {
+      id: Date.now(),
+      code: newCode.toUpperCase(),
+      name: newName,
+      department: newDept,
+      credits: parseInt(newCredits, 10),
+      semester: 4,
+      instructor: newInstructor,
+      enrolled: 1
+    };
+
+    const updated = [courseObj, ...courses];
+    setCourses(updated);
+    safeSetStorage('eduportal_courses', JSON.stringify(updated));
+    apiCall('/courses', 'POST', courseObj).catch(() => {});
+
+    setNewCode('');
+    setNewName('');
+    setShowAddModal(false);
+  };
+
+  const filteredCourses = courses.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.code.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = selectedDept === 'All' || c.department === selectedDept;
+    return matchesSearch && matchesDept;
+  });
+
   return h('div', { className: 'space-y-6' },
-    h('div', null,
-      h('h2', { className: 'text-2xl font-black text-white' }, 'Academic Course Catalog'),
-      h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official curriculum and course offerings across university departments')
+    h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-4' },
+      h('div', null,
+        h('h2', { className: 'text-2xl font-black text-white' }, 'Academic Course Catalog'),
+        h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official curriculum and course offerings across university departments')
+      ),
+      (user?.role === 'professor' || user?.role === 'admin') && h('button', {
+        onClick: () => setShowAddModal(true),
+        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors flex items-center gap-2 shrink-0'
+      }, '+ Add New Course')
+    ),
+
+    h('div', { className: 'flex flex-col sm:flex-row gap-3 bg-slate-900 p-3 rounded-2xl border border-slate-800' },
+      h('input', {
+        type: 'text',
+        value: searchQuery,
+        placeholder: '🔍 Search by course name or code (e.g. CSE-101)...',
+        onChange: (e) => setSearchQuery(e.target.value),
+        className: 'flex-1 px-4 py-2 bg-slate-800 border border-slate-700 text-white text-xs rounded-xl focus:outline-none focus:border-indigo-500'
+      }),
+      h('select', {
+        value: selectedDept,
+        onChange: (e) => setSelectedDept(e.target.value),
+        className: 'px-4 py-2 bg-slate-800 border border-slate-700 text-white text-xs rounded-xl focus:outline-none focus:border-indigo-500'
+      },
+        h('option', { value: 'All' }, 'All Departments'),
+        h('option', { value: 'Computer Science' }, 'Computer Science'),
+        h('option', { value: 'Electrical Engineering' }, 'Electrical Engineering'),
+        h('option', { value: 'Mathematics' }, 'Mathematics')
+      )
     ),
 
     h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
-      courses.map(course =>
+      filteredCourses.length > 0 ? filteredCourses.map(course =>
         h('div', { key: course.id, className: 'bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
           h('div', { className: 'flex items-center justify-between' },
             h('span', { className: 'px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30' }, course.code),
@@ -790,17 +833,107 @@ function CoursesPage() {
             h('span', { className: 'font-bold text-emerald-400' }, `${course.enrolled} Enrolled`)
           )
         )
+      ) : h('div', { className: 'col-span-2 text-center p-8 bg-slate-900 rounded-2xl border border-slate-800 text-slate-400 text-xs font-medium' }, 'No courses found matching your query.')
+    ),
+
+    showAddModal && h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4' },
+      h('div', { className: 'bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl' },
+        h('div', { className: 'flex justify-between items-center' },
+          h('h3', { className: 'text-lg font-bold text-white' }, 'Create New Course Offering'),
+          h('button', { onClick: () => setShowAddModal(false), className: 'text-slate-400 hover:text-white font-bold' }, '✕')
+        ),
+        h('form', { onSubmit: handleAddCourse, className: 'space-y-3 text-xs' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Course Code'),
+            h('input', {
+              type: 'text',
+              value: newCode,
+              placeholder: 'e.g. CSE-305',
+              onChange: (e) => setNewCode(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Course Title'),
+            h('input', {
+              type: 'text',
+              value: newName,
+              placeholder: 'e.g. Operating Systems & Kernel Architecture',
+              onChange: (e) => setNewName(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'grid grid-cols-2 gap-3' },
+            h('div', { className: 'space-y-1' },
+              h('label', { className: 'font-bold text-slate-300' }, 'Department'),
+              h('select', {
+                value: newDept,
+                onChange: (e) => setNewDept(e.target.value),
+                className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+              },
+                h('option', { value: 'Computer Science' }, 'Computer Science'),
+                h('option', { value: 'Electrical Engineering' }, 'Electrical Engineering'),
+                h('option', { value: 'Mathematics' }, 'Mathematics')
+              )
+            ),
+            h('div', { className: 'space-y-1' },
+              h('label', { className: 'font-bold text-slate-300' }, 'Credit Hours'),
+              h('input', {
+                type: 'number',
+                value: newCredits,
+                min: 1,
+                max: 6,
+                onChange: (e) => setNewCredits(e.target.value),
+                className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+              })
+            )
+          ),
+          h('div', { className: 'flex justify-end gap-2 pt-2' },
+            h('button', { type: 'button', onClick: () => setShowAddModal(false), className: 'px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold' }, 'Cancel'),
+            h('button', { type: 'submit', className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold' }, 'Save Course')
+          )
+        )
       )
     )
   );
 }
 
-// --- ATTENDANCE PAGE ---
+// Attendance Management Page
 function AttendancePage() {
+  const { user } = useContext(AuthContext);
+  const [logs, setLogs] = useState([
+    { id: 1, date: '2026-08-01', course: 'CSE-101 Data Structures & Algorithms', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
+    { id: 2, date: '2026-07-29', course: 'CSE-202 Database Management Systems', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
+    { id: 3, date: '2026-07-28', course: 'MAT-301 Applied Linear Algebra', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' }
+  ]);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [logCourse, setLogCourse] = useState('CSE-101 Data Structures');
+  const [logStudent, setLogStudent] = useState('Alex Johnson');
+  const [logStatus, setLogStatus] = useState('Present');
+
+  const handleMarkAttendance = (e) => {
+    e.preventDefault();
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      course: logCourse,
+      student: logStudent,
+      status: logStatus
+    };
+    setLogs([newEntry, ...logs]);
+    setShowLogModal(false);
+  };
+
   return h('div', { className: 'space-y-6' },
-    h('div', null,
-      h('h2', { className: 'text-2xl font-black text-white' }, 'Attendance Management'),
-      h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Verified attendance records and compliance registry')
+    h('div', { className: 'flex items-center justify-between' },
+      h('div', null,
+        h('h2', { className: 'text-2xl font-black text-white' }, 'Attendance Management'),
+        h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Verified attendance records and compliance registry')
+      ),
+      (user?.role === 'professor' || user?.role === 'admin') && h('button', {
+        onClick: () => setShowLogModal(true),
+        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors'
+      }, '+ Record Attendance')
     ),
 
     h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden' },
@@ -814,19 +947,59 @@ function AttendancePage() {
           )
         ),
         h('tbody', { className: 'divide-y divide-slate-800 font-medium text-slate-300' },
-          [
-            { id: 1, date: '2026-08-01', course: 'CSE-101 Data Structures & Algorithms', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
-            { id: 2, date: '2026-07-29', course: 'CSE-202 Database Management Systems', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' },
-            { id: 3, date: '2026-07-28', course: 'MAT-301 Applied Linear Algebra', student: 'Alex Johnson (CSE-2026-104)', status: 'Present' }
-          ].map(row =>
+          logs.map(row =>
             h('tr', { key: row.id, className: 'hover:bg-slate-800/50 transition-colors' },
               h('td', { className: 'p-4 font-bold text-white' }, row.date),
               h('td', { className: 'p-4 font-bold text-slate-200' }, row.course),
               h('td', { className: 'p-4 text-slate-400' }, row.student),
               h('td', { className: 'p-4' },
-                h('span', { className: 'px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' }, row.status)
+                h('span', { className: `px-3 py-1 rounded-full text-[11px] font-bold border ${row.status === 'Present' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'}` }, row.status)
               )
             )
+          )
+        )
+      )
+    ),
+
+    showLogModal && h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4' },
+      h('div', { className: 'bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl' },
+        h('div', { className: 'flex justify-between items-center' },
+          h('h3', { className: 'text-lg font-bold text-white' }, 'Record Student Attendance Log'),
+          h('button', { onClick: () => setShowLogModal(false), className: 'text-slate-400 hover:text-white font-bold' }, '✕')
+        ),
+        h('form', { onSubmit: handleMarkAttendance, className: 'space-y-3 text-xs' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Course'),
+            h('input', {
+              type: 'text',
+              value: logCourse,
+              onChange: (e) => setLogCourse(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Student Identity'),
+            h('input', {
+              type: 'text',
+              value: logStudent,
+              onChange: (e) => setLogStudent(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Attendance Status'),
+            h('select', {
+              value: logStatus,
+              onChange: (e) => setLogStatus(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            },
+              h('option', { value: 'Present' }, 'Present'),
+              h('option', { value: 'Absent' }, 'Absent')
+            )
+          ),
+          h('div', { className: 'flex justify-end gap-2 pt-2' },
+            h('button', { type: 'button', onClick: () => setShowLogModal(false), className: 'px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold' }, 'Cancel'),
+            h('button', { type: 'submit', className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold' }, 'Record Log')
           )
         )
       )
@@ -834,7 +1007,7 @@ function AttendancePage() {
   );
 }
 
-// --- RESULTS PAGE ---
+// Transcripts and Grades Page
 function ResultsPage() {
   return h('div', { className: 'space-y-6' },
     h('div', { className: 'flex items-center justify-between' },
@@ -878,7 +1051,7 @@ function ResultsPage() {
   );
 }
 
-// --- ENROLLMENT PAGE ---
+// Course Enrollment Page
 function EnrollmentPage() {
   const [enrolled, setEnrolled] = useState([1, 2]);
 
@@ -918,7 +1091,7 @@ function EnrollmentPage() {
   );
 }
 
-// --- REPORTS PAGE ---
+// Reports Page
 function ReportsPage() {
   return h('div', { className: 'space-y-6' },
     h('div', { className: 'flex items-center justify-between' },
@@ -937,19 +1110,51 @@ function ReportsPage() {
   );
 }
 
-// --- BULLETINS PAGE ---
+// Interactive Bulletins Page
 function BulletinsPage() {
+  const { user } = useContext(AuthContext);
+  const [bulletins, setBulletins] = useState([
+    { id: 1, title: 'Fall 2026 Mid-Semester Examination Schedule Published', category: 'Academic', date: '2026-08-01', author: 'Academic Affairs Office', content: 'The official schedule for mid-semester examinations has been published. All students must review their course dates.' },
+    { id: 2, title: 'University Research Grant Call for Proposals', category: 'Research', date: '2026-07-28', author: 'Office of Research', content: 'Faculty members are invited to submit research funding proposals for the upcoming fiscal cycle.' }
+  ]);
+  const [showAddNoticeModal, setShowAddNoticeModal] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeCategory, setNoticeCategory] = useState('Academic');
+  const [noticeContent, setNoticeContent] = useState('');
+
+  const handlePostNotice = (e) => {
+    e.preventDefault();
+    if (!noticeTitle || !noticeContent) return;
+
+    const newNotice = {
+      id: Date.now(),
+      title: noticeTitle,
+      category: noticeCategory,
+      date: new Date().toISOString().split('T')[0],
+      author: user?.name || 'Department Office',
+      content: noticeContent
+    };
+
+    setBulletins([newNotice, ...bulletins]);
+    setNoticeTitle('');
+    setNoticeContent('');
+    setShowAddNoticeModal(false);
+  };
+
   return h('div', { className: 'space-y-6' },
-    h('div', null,
-      h('h2', { className: 'text-2xl font-black text-white' }, 'University Bulletins'),
-      h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official university circulars, academic notices, and institutional updates')
+    h('div', { className: 'flex items-center justify-between' },
+      h('div', null,
+        h('h2', { className: 'text-2xl font-black text-white' }, 'University Bulletins'),
+        h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official university circulars, academic notices, and institutional updates')
+      ),
+      (user?.role === 'professor' || user?.role === 'admin') && h('button', {
+        onClick: () => setShowAddNoticeModal(true),
+        className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition-colors'
+      }, '+ Publish Announcement')
     ),
 
     h('div', { className: 'space-y-4' },
-      [
-        { id: 1, title: 'Fall 2026 Mid-Semester Examination Schedule Published', category: 'Academic', date: '2026-08-01', author: 'Academic Affairs Office', content: 'The official schedule for mid-semester examinations has been published. All students must review their course dates.' },
-        { id: 2, title: 'University Research Grant Call for Proposals', category: 'Research', date: '2026-07-28', author: 'Office of Research', content: 'Faculty members are invited to submit research funding proposals for the upcoming fiscal cycle.' }
-      ].map(notice =>
+      bulletins.map(notice =>
         h('div', { key: notice.id, className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
           h('div', { className: 'flex items-center justify-between' },
             h('span', { className: 'px-3 py-1 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' }, notice.category),
@@ -960,11 +1165,59 @@ function BulletinsPage() {
           h('div', { className: 'text-[11px] text-slate-500 font-bold pt-2 border-t border-slate-800' }, `Issued by: ${notice.author}`)
         )
       )
+    ),
+
+    showAddNoticeModal && h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4' },
+      h('div', { className: 'bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl' },
+        h('div', { className: 'flex justify-between items-center' },
+          h('h3', { className: 'text-lg font-bold text-white' }, 'Publish Announcement Bulletin'),
+          h('button', { onClick: () => setShowAddNoticeModal(false), className: 'text-slate-400 hover:text-white font-bold' }, '✕')
+        ),
+        h('form', { onSubmit: handlePostNotice, className: 'space-y-3 text-xs' },
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Title'),
+            h('input', {
+              type: 'text',
+              value: noticeTitle,
+              onChange: (e) => setNoticeTitle(e.target.value),
+              placeholder: 'Announcement title...',
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Category'),
+            h('select', {
+              value: noticeCategory,
+              onChange: (e) => setNoticeCategory(e.target.value),
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            },
+              h('option', { value: 'Academic' }, 'Academic'),
+              h('option', { value: 'Examination' }, 'Examination'),
+              h('option', { value: 'Research' }, 'Research'),
+              h('option', { value: 'Campus Event' }, 'Campus Event')
+            )
+          ),
+          h('div', { className: 'space-y-1' },
+            h('label', { className: 'font-bold text-slate-300' }, 'Content'),
+            h('textarea', {
+              rows: 3,
+              value: noticeContent,
+              onChange: (e) => setNoticeContent(e.target.value),
+              placeholder: 'Detailed announcement text...',
+              className: 'w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl'
+            })
+          ),
+          h('div', { className: 'flex justify-end gap-2 pt-2' },
+            h('button', { type: 'button', onClick: () => setShowAddNoticeModal(false), className: 'px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold' }, 'Cancel'),
+            h('button', { type: 'submit', className: 'px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold' }, 'Publish')
+          )
+        )
+      )
     )
   );
 }
 
-// --- MAIN APP CONTROLLER ---
+// Main App component
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { user } = useContext(AuthContext);
@@ -996,7 +1249,7 @@ function App() {
   );
 }
 
-// --- MOUNT REACT APP ---
+// Mount React app
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('root');
   if (root) {
