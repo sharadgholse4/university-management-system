@@ -430,33 +430,42 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
-    // 1. If real Google Client ID is configured, trigger Google OAuth popup & wait for response
-    if (window.google?.accounts?.id && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
+    const hasRealClientId = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID');
+
+    if (hasRealClientId && window.google?.accounts?.oauth2) {
       try {
-        window.google.accounts.id.initialize({
+        const client = window.google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
-          callback: (response) => {
-            if (response.credential) {
-              loginWithGoogle(response.credential);
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              try {
+                const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                }).then(res => res.json());
+
+                if (userInfo && userInfo.email) {
+                  loginWithGoogle({
+                    name: userInfo.name || 'Google User',
+                    email: userInfo.email,
+                    picture: userInfo.picture || ''
+                  });
+                  return;
+                }
+              } catch (e) {
+                console.error('[Google OAuth] Failed to fetch Google userinfo:', e);
+              }
             }
           }
         });
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // If One Tap is skipped/suppressed, request explicit OAuth popup
-            loginWithGoogle({
-              name: 'Google User',
-              email: `user.${Math.floor(Math.random() * 1000)}@university.edu`
-            });
-          }
-        });
-        return; // IMPORTANT: Stop execution so it waits for Google's account selection callback!
-      } catch (e) {
-        console.warn('[Google SSO] Prompt error:', e);
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn('[Google OAuth] Token client failed, falling back to demo mode:', err);
       }
     }
-    
-    // 2. Demo mode fallback when GOOGLE_CLIENT_ID is not configured
+
+    // Demo Mode fallback when GOOGLE_CLIENT_ID is not configured
     loginWithGoogle({
       name: 'Sharad Gholse (Google Workspace SSO)',
       email: 'sharad.gholse@university.edu',
