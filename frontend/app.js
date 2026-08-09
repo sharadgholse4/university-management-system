@@ -17,28 +17,30 @@ const VIDEO_BG_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOtt
 
 function BackgroundVideo() {
   const videoRef = useRef(null);
+  const [videoError, setVideoError] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current) {
+    if (videoRef.current && !videoError) {
       videoRef.current.muted = true;
       videoRef.current.play().catch(e => {
         console.warn('[Video BG] Autoplay policy:', e);
       });
     }
-  }, []);
+  }, [videoError]);
 
-  return h('div', { className: 'fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden bg-slate-950' },
-    h('video', {
+  return h('div', { className: 'fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950' },
+    !videoError && h('video', {
       ref: videoRef,
       autoPlay: true,
       loop: true,
       muted: true,
       playsInline: true,
       preload: 'auto',
+      onError: () => setVideoError(true),
       className: 'w-full h-full object-cover opacity-40 scale-105',
       src: VIDEO_BG_URL
     }),
-    h('div', { className: 'absolute inset-0 bg-slate-950/60 backdrop-blur-[1px]' })
+    h('div', { className: 'absolute inset-0 bg-slate-950/50 backdrop-blur-[1px]' })
   );
 }
 
@@ -286,7 +288,7 @@ function getDynamicGreeting(userName) {
     emoji = '☀️';
   } else if (hour >= 17 && hour < 22) {
     timeOfDay = 'Good evening';
-    emoji = '<ctrl42>';
+    emoji = '🌆';
   } else if (hour >= 22 || hour < 5) {
     timeOfDay = 'Good night';
     emoji = '🌙';
@@ -804,7 +806,6 @@ function AuthPage() {
       )
     )
   );
-}
 
 // Overview Dashboard
 function DashboardPage({ setActiveTab }) {
