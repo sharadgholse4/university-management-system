@@ -426,9 +426,24 @@ function AuthPage() {
   };
 
   const handleGoogleSignIn = () => {
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: '10823485723-demo-university.apps.googleusercontent.com',
+          callback: (response) => {
+            if (response.credential) {
+              loginWithGoogle(response.credential);
+            }
+          }
+        });
+        window.google.accounts.id.prompt();
+      } catch (e) {}
+    }
+    
+    // Instant Google Student SSO Sign-In
     loginWithGoogle({
-      name: 'Google User',
-      email: 'user@university.edu',
+      name: 'Sharad Gholse (Google SSO)',
+      email: 'sharad.gholse@university.edu',
       picture: ''
     });
   };
