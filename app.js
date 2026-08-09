@@ -517,10 +517,11 @@ function AuthPage() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
-    h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl' }),
-    h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl' }),
+    h(BackgroundVideo),
+    h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none' }),
+    h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl pointer-events-none' }),
 
-    h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
+    h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
       h('div', { className: 'text-center space-y-2' },
         h('div', { className: 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-400 mx-auto flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/25' }, '🏛️'),
         h('h2', { className: 'text-2xl font-black text-white tracking-tight' }, 'EDUPORTAL ACADEMIC SYSTEM'),
@@ -1359,9 +1360,10 @@ function App() {
     }
   };
 
-  return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans' },
+  return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative' },
+    h(BackgroundVideo),
     h(Navbar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
-    h('div', { className: 'flex-1 flex w-full relative overflow-hidden' },
+    h('div', { className: 'flex-1 flex w-full relative z-10 overflow-hidden' },
       h(Sidebar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
       h('main', { className: 'flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-full' }, renderTab())
     )

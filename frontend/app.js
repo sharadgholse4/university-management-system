@@ -13,6 +13,22 @@ const API_BASE = '/api';
 // Paste your Client ID from Google Cloud Console below (e.g. '123456789-xyz.apps.googleusercontent.com')
 const GOOGLE_CLIENT_ID = '445838676324-impfkq5c9utvu6ff3inh6iv8s67vvuph.apps.googleusercontent.com';
 
+const VIDEO_BG_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_055001_8e16d972-3b2b-441c-86ad-2901a54682f9.mp4';
+
+function BackgroundVideo() {
+  return h('div', { className: 'fixed inset-0 z-0 overflow-hidden pointer-events-none' },
+    h('video', {
+      autoPlay: true,
+      loop: true,
+      muted: true,
+      playsInline: true,
+      className: 'w-full h-full object-cover opacity-25 scale-105',
+      src: VIDEO_BG_URL
+    }),
+    h('div', { className: 'absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' })
+  );
+}
+
 // Storage helpers
 function safeGetStorage(key) {
   try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -283,7 +299,7 @@ function DynamicGreetingBadge() {
 function Navbar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const { user, logout } = useContext(AuthContext);
 
-  return h('header', { className: 'bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
+  return h('header', { className: 'bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white sticky top-0 z-50 shadow-md' },
     h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2' },
       h('div', { className: 'flex items-center gap-3' },
         h('button', {
@@ -358,7 +374,7 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       )
     ),
 
-    h('div', { className: 'p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1 text-center font-medium' },
+    h('div', { className: 'p-3 bg-slate-950/90 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1 text-center font-medium' },
       h('div', { className: 'font-bold text-slate-300' }, '© 2026 EduPortal'),
       h('div', { className: 'flex items-center justify-center gap-1 text-slate-400' },
         'Made with ',
@@ -369,7 +385,7 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
 
   return h(React.Fragment, null,
     // Desktop Sidebar (lg screens)
-    h('aside', { className: 'hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]' }, navContent),
+    h('aside', { className: 'hidden lg:flex w-64 bg-slate-900/90 backdrop-blur-md border-r border-slate-800 text-slate-300 p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]' }, navContent),
 
     // Mobile / Tablet Drawer (sm & md screens)
     mobileOpen && h('div', { className: 'lg:hidden fixed inset-0 z-50 flex' },
@@ -381,7 +397,7 @@ function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
 
 // Metric Card Component
 function MetricCard({ title, value, subtitle, icon, badge }) {
-  return h('div', { className: 'bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-2' },
+  return h('div', { className: 'bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border border-slate-800 shadow-lg space-y-2' },
     h('div', { className: 'flex items-center justify-between' },
       h('span', { className: 'text-xs font-bold text-slate-400 uppercase tracking-wider' }, title),
       h('span', { className: 'text-xl' }, icon)
@@ -517,8 +533,9 @@ function AuthPage() {
   };
 
   return h('div', { className: 'min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans relative overflow-hidden' },
-    h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl' }),
-    h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl' }),
+    h(BackgroundVideo),
+    h('div', { className: 'absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none' }),
+    h('div', { className: 'absolute -bottom-40 -right-40 w-96 h-96 bg-sky-600/20 rounded-full blur-3xl pointer-events-none' }),
 
     h('div', { className: 'w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative z-10' },
       h('div', { className: 'text-center space-y-2' },
@@ -746,7 +763,7 @@ function DashboardPage({ setActiveTab }) {
   const { user } = useContext(AuthContext);
 
   return h('div', { className: 'space-y-6' },
-    h('div', { className: 'bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6' },
+    h('div', { className: 'bg-slate-900/90 backdrop-blur-md text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6' },
       h('div', { className: 'space-y-2' },
         h('span', { className: 'px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[11px] font-bold uppercase tracking-wider' }, `Role: ${user?.role}`),
         h('h2', { className: 'text-2xl sm:text-3xl font-black tracking-tight' }, `Academic Portal — ${user?.name}`),
@@ -765,13 +782,13 @@ function DashboardPage({ setActiveTab }) {
       h(MetricCard, { title: 'Current Semester', value: 'Fall 2026', subtitle: 'Academic Term 4', icon: '🏛️' })
     ),
 
-    h('div', { className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4' },
+    h('div', { className: 'bg-slate-900/90 backdrop-blur-md p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4' },
       h('div', { className: 'flex items-center justify-between' },
         h('h3', { className: 'text-base font-bold text-white' }, '📢 University Announcements'),
         h('button', { onClick: () => setActiveTab('notices'), className: 'text-xs font-bold text-indigo-400 hover:text-indigo-300' }, 'View All Bulletins →')
       ),
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
-        h('div', { className: 'p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2' },
+        h('div', { className: 'p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2' },
           h('div', { className: 'flex items-center justify-between text-xs' },
             h('span', { className: 'px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' }, 'Academic Examination'),
             h('span', { className: 'text-slate-400 font-medium' }, '2026-08-01')
@@ -779,7 +796,7 @@ function DashboardPage({ setActiveTab }) {
           h('h4', { className: 'font-bold text-white text-sm' }, 'Fall 2026 Mid-Semester Examination Schedule Published'),
           h('p', { className: 'text-xs text-slate-400 font-medium' }, 'Official timetables for undergraduate and postgraduate mid-semester examinations have been released.')
         ),
-        h('div', { className: 'p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2' },
+        h('div', { className: 'p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2' },
           h('div', { className: 'flex items-center justify-between text-xs' },
             h('span', { className: 'px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' }, 'Research & Innovation'),
             h('span', { className: 'text-slate-400 font-medium' }, '2026-07-28')
@@ -797,8 +814,8 @@ function ProfilePage() {
   const { user } = useContext(AuthContext);
 
   return h('div', { className: 'max-w-4xl mx-auto space-y-6' },
-    h('div', { className: 'bg-slate-900 rounded-3xl border border-slate-800 shadow-lg overflow-hidden' },
-      h('div', { className: 'h-32 bg-slate-950' }),
+    h('div', { className: 'bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-800 shadow-lg overflow-hidden' },
+      h('div', { className: 'h-32 bg-slate-950/80' }),
       h('div', { className: 'px-6 pb-6 relative' },
         h('div', { className: 'flex flex-col sm:flex-row items-start sm:items-end justify-between -mt-12 mb-4 gap-4' },
           h('div', { className: 'flex items-end gap-4' },
@@ -915,7 +932,7 @@ function CoursesPage() {
       }, '+ Add New Course')
     ),
 
-    h('div', { className: 'flex flex-col sm:flex-row gap-3 bg-slate-900 p-3 rounded-2xl border border-slate-800' },
+    h('div', { className: 'flex flex-col sm:flex-row gap-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-800' },
       h('input', {
         type: 'text',
         value: searchQuery,
@@ -937,7 +954,7 @@ function CoursesPage() {
 
     h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
       filteredCourses.length > 0 ? filteredCourses.map(course =>
-        h('div', { key: course.id, className: 'bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
+        h('div', { key: course.id, className: 'bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
           h('div', { className: 'flex items-center justify-between' },
             h('span', { className: 'px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30' }, course.code),
             h('span', { className: 'text-xs font-bold text-slate-400' }, `${course.credits} Credits • Semester ${course.semester}`)
@@ -948,7 +965,7 @@ function CoursesPage() {
             h('span', { className: 'font-bold text-emerald-400' }, `${course.enrolled} Enrolled`)
           )
         )
-      ) : h('div', { className: 'col-span-2 text-center p-8 bg-slate-900 rounded-2xl border border-slate-800 text-slate-400 text-xs font-medium' }, 'No courses found matching your query.')
+      ) : h('div', { className: 'col-span-2 text-center p-8 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 text-slate-400 text-xs font-medium' }, 'No courses found matching your query.')
     ),
 
     showAddModal && h('div', { className: 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4' },
@@ -1051,7 +1068,7 @@ function AttendancePage() {
       }, '+ Record Attendance')
     ),
 
-    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
+    h('div', { className: 'bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
       h('table', { className: 'w-full text-left border-collapse text-xs min-w-[600px]' },
         h('thead', { className: 'bg-slate-950 text-slate-300 font-bold uppercase' },
           h('tr', null,
@@ -1133,7 +1150,7 @@ function ResultsPage() {
       h('div', { className: 'px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl text-xs shrink-0 self-start sm:self-auto' }, 'Cumulative GPA: 3.88 / 4.00')
     ),
 
-    h('div', { className: 'bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
+    h('div', { className: 'bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-sm overflow-x-auto min-w-full' },
       h('table', { className: 'w-full text-left border-collapse text-xs min-w-[600px]' },
         h('thead', { className: 'bg-slate-950 text-slate-300 font-bold uppercase' },
           h('tr', null,
@@ -1189,7 +1206,7 @@ function EnrollmentPage() {
         { id: 4, code: 'MAT-301', name: 'Applied Linear Algebra', credits: 3, instructor: 'Dr. Ada Lovelace' }
       ].map(course => {
         const isEnrolled = enrolled.includes(course.id);
-        return h('div', { key: course.id, className: `bg-slate-900 p-5 rounded-2xl border transition-all ${isEnrolled ? 'border-indigo-500 shadow-lg shadow-indigo-500/10' : 'border-slate-800'}` },
+        return h('div', { key: course.id, className: `bg-slate-900/90 backdrop-blur-md p-5 rounded-2xl border transition-all ${isEnrolled ? 'border-indigo-500 shadow-lg shadow-indigo-500/10' : 'border-slate-800'}` },
           h('div', { className: 'flex items-center justify-between mb-3' },
             h('span', { className: 'px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-bold text-xs' }, course.code),
             h('span', { className: 'text-xs font-bold text-slate-400' }, `${course.credits} Credits`)
@@ -1270,7 +1287,7 @@ function BulletinsPage() {
 
     h('div', { className: 'space-y-4' },
       bulletins.map(notice =>
-        h('div', { key: notice.id, className: 'bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
+        h('div', { key: notice.id, className: 'bg-slate-900/90 backdrop-blur-md p-6 rounded-2xl border border-slate-800 shadow-sm space-y-3' },
           h('div', { className: 'flex items-center justify-between' },
             h('span', { className: 'px-3 py-1 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' }, notice.category),
             h('span', { className: 'text-xs text-slate-400 font-medium' }, notice.date)
@@ -1356,9 +1373,10 @@ function App() {
     }
   };
 
-  return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans' },
+  return h('div', { className: 'min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative' },
+    h(BackgroundVideo),
     h(Navbar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
-    h('div', { className: 'flex-1 flex w-full relative overflow-hidden' },
+    h('div', { className: 'flex-1 flex w-full relative z-10 overflow-hidden' },
       h(Sidebar, { activeTab, setActiveTab, mobileOpen, setMobileOpen }),
       h('main', { className: 'flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-full' }, renderTab())
     )
